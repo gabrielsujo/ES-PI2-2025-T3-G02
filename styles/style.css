@@ -1,0 +1,22 @@
+html {
+    font-size: 20px;
+    font-family: "open sans", sans-serif;
+    color-background: #00539f;
+}
+
+h1 {	
+    font-size: 60ox;
+    text-align: center;
+    margin: 0;
+    padding: 20px 0;
+    color: #a8a29e;
+    text-shadow: 3px 3px 1px black;
+}
+
+body {
+    width: 600px;
+    margin: 0 auto;
+    background-color: #4b5563;
+    padding: 0 20px 20px 20px;
+    border: 5px solid black;
+}

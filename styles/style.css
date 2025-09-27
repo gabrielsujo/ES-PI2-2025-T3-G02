@@ -121,3 +121,23 @@ body {
 .submit-btn:hover {
     background-color: #cbd5e1;
 }
+
+/*img do logo*/
+.logo-section img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+/*responsividade*/
+@media (max-width: 768px) {
+    .main-container {
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+    .logo-section {
+        width: 100%;
+        max-width: 300px;
+        margin-top: 2rem;
+    }
+}

@@ -1,0 +1,27 @@
+# Dependências
+# Ignora a pasta de pacotes instalados
+node_modules/
+
+# Logs
+# Ignora arquivos de log de debug
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de ambiente
+# Ignora arquivos que guardam variáveis de ambiente e segredos
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Pastas de build/distribuição
+dist/
+build/
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db

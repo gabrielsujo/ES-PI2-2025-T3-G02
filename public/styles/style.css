@@ -1,12 +1,18 @@
 :root {
-    --background-page: #6b7280;
-    --background-container: #1e293b;
-    --background-input: #334155;
-    --background-buttton: #e4e4e7;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-button: #0f172a;
-    --font-family: "Inter", sans-serif;
+    /* Cores e fontes da página de Login */
+    --background-page: #D9D9D9;
+    --background-container: #FFFFFF;
+    --background-right-section: #E5E5E5;
+    --primary-blue: #3B82F6;
+    --primary-blue-hover: #2563EB;
+    --text-primary: #1E1E1E;
+    --text-secondary: #555555;
+    --text-label: #333333;
+    --text-button: #FFFFFF;
+    --border-color: #CCCCCC;
+    --image-border-primary: #999999;
+    --image-outline: #3B82F6;
+    --font-family: "Arial", sans-serif;
 }
 
 * {
@@ -19,72 +25,76 @@ body {
     font-family: var(--font-family);
     background-color: var(--background-page);
     color: var(--text-primary);
-    align-items: center;
-    min-height: 100vh;
     display: flex;
     justify-content: center;
-    
+    align-items: center;
+    min-height: 100vh;
 }
 
-/*container principal */
+/* Container principal */
 .main-container {
     width: 900px;
     max-width: 90%;
     background-color: var(--background-container);
-    border-radius: 12px;
-    padding:2rem;
+    border-radius: 10px;
     display: flex;
-    gap: 2rem;
-    align-items: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    align-items: stretch;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
 }
 
-.from-section {
+.form-section {
     flex: 1;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .logo-section {
     flex: 1;
     display: flex;
-    align-content: center;
+    justify-content: center;
     align-items: center;
-    background-color: #f0f0f0;
-    border-radius: 8px;
+    background-color: var(--background-right-section);
     padding: 2rem;
 }
 
-/* titulo */
+/* Título */
 .title {
-    font-size: 1.8;
+    font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 2rem;
     color: var(--text-primary);
+    text-align: center;
 }
 
-.title-highlight {
-    font-weight: 400;
+/*Estilo para o span 'Dez'*/
+.title .title-hightlight {
+    font-weight: 700;
 }
 
-/* input e labels */
+
+/* Input e labels */
 .input-group {
     margin-bottom: 1.2rem;
     display: flex;
     flex-direction: column;
 }
 
-.input-group label{
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 0.5rem;
+.input-group label {
+    font-size: 14px;
+    font-weight: normal;
+    color: var(--text-label);
+    margin-bottom: 5px;
     text-transform: uppercase;
 }
 
 .input-group input {
-    background-color: var(--background-input);
-    border: none;
+    background-color: var(--background-container);
+    border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 0.9rem;
+    padding: 10px;
     color: var(--text-primary);
     font-size: 0.9rem;
     outline: none;
@@ -92,55 +102,60 @@ body {
 }
 
 .input-group input:focus {
-    box-shadow: 0 0 0 2px #60a5fa;
+    box-shadow: 0 0 0 2px var(--primary-blue);
+    border-color: var(--primary-blue);
 }
 
-/*linha do formulario */
+/* Linha do formulário */
 .form-row {
     display: flex;
     gap: 1rem;
 }
 
 .form-row .input-group {
-    flex: 1; /* ambos grupos vai ocupar o mesmo espaço */
+    flex: 1;
 }
 
-/*botão de envio*/
-
+/* Botão de envio */
 .submit-btn {
     width: 100%;
-    padding: 0.9rem;
-    background-color: var(--background-buttton);
+    padding: 10px;
+    background-color: var(--primary-blue);
     color: var(--text-button);
     border: none;
     border-radius: 6px;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: bold;
     cursor: pointer;
     margin-top: 1rem;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.3s;
 }
 
 .submit-btn:hover {
-    background-color: #cbd5e1;
+    background-color: var(--primary-blue-hover);
 }
 
-/*img do logo*/
+/* Imagem */
 .logo-section img {
-    max-width: 100%;
+    max-width: 250px;
     height: auto;
     object-fit: contain;
+    border-radius: 15px;
+    border: 6px solid var(--image-border-primary);
+    outline: 4px solid var(--image-outline);
+    outline-offset: 5px;
 }
 
-/*responsividade*/
+/* Responsividade */
 @media (max-width: 768px) {
     .main-container {
         flex-direction: column;
+        padding: 0;
+    }
+    .form-section {
         padding: 1.5rem;
     }
     .logo-section {
-        width: 100%;
-        max-width: 300px;
-        margin-top: 2rem;
+        padding: 2rem 1.5rem;
     }
 }

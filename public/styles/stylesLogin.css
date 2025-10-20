@@ -98,6 +98,15 @@ button:hover {
     text-decoration: none;
 }
 
+.account {
+    text-align: center;
+    display: block;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #3B82F6;
+    text-decoration: none;
+}
+
 .forgot:hover {
     text-decoration: underline;
 }

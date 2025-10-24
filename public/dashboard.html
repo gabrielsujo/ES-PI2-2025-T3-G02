@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Projeto NotaDez</title>
+    <link rel="stylesheet" href="./styles/dashboard.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container">
+            <h1>Projeto NotaDez</h1>
+            <button id="logout-button" class="btn-secondary">Sair</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="dashboard-header">
+            <h2>Minhas Instituições</h2>
+            <button id="add-instituição-btn" class="btn-primary">
+                + Adicionar Instituição
+            </button>
+        </div>
+
+        <section id="instituicoes-lista" class="card-grid">
+            <article class="card">
+                <div class="card-content">
+                    <h3>PUC-Campinas</h3>
+                    <p>Engenharia de software</p>
+                </div>
+                <div class="card-actions">
+                    <a href="#" class="btn-secondary"> <!-- link para onde esta armazenada as dicipinhas-->
+                        Gerenciar Disciplinas
+                    </a>
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="card-content">
+                    <h3>Unicamp</h3>
+                    <p>Ciência da computação</p>
+                </div>
+                <div class="card-actions">
+                    <a href="#" class="btn-secondary"> <!-- link para onde esta armazenada as dicipinhas-->
+                        Gerenciar Disciplinas 
+                    </a>
+                </div>
+            </article>
+
+            <p id="empty-state-msg" style="display: none;">
+                Você ainda não cadastrou nenhuma instituição.
+                Use o botão "+ Adicionar Instituição" para comerçar.
+            </p>
+        </section>
+    </main>
+</body>
+</html>

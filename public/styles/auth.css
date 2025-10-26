@@ -1,0 +1,217 @@
+
+:root {
+
+    --background-page: #D9D9D9;
+    --background-container: #FFFFFF;
+    --background-right-section: #E5E5E5;
+    --primary-blue: #3B82F6;
+    --primary-blue-hover: #2563EB;
+    --text-primary: #1E1E1E;
+    --text-secondary: #555555;
+    --text-label: #333333;
+    --text-button: #FFFFFF;
+    --border-color: #CCCCCC;
+    --image-border-primary: #999999;
+    --image-outline: #3B82F6;
+    --font-family: "Arial", sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-family);
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-page);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem 0; 
+}
+
+
+.container, .main-container {
+    width: 900px;
+    max-width: 90%;
+    background-color: var(--background-container);
+    border-radius: 10px;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+}
+
+
+.login-box {
+    display: flex;
+    width: 100%;
+}
+
+.left, .form-section {
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.right, .logo-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--background-right-section);
+    padding: 2rem;
+}
+
+.left h2, .title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    text-align: center;
+}
+.title .title-hightlight {
+    font-weight: 700;
+}
+
+.left p {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--text-secondary);
+}
+
+
+.input-group {
+    margin-bottom: 1.2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label,
+form > label {
+    font-size: 14px;
+    font-weight: normal;
+    color: var(--text-label);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.input-group input,
+form > input[type="email"],
+form > input[type="password"],
+form > input[type="text"] {
+    background-color: var(--background-container);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+    transition: box-shadow 0.2s ease-in-out;
+    margin-bottom: 20px;
+}
+
+.input-group input {
+    margin-bottom: 0;
+}
+
+.input-group input:focus,
+form > input[type="email"]:focus,
+form > input[type="password"]:focus,
+form > input[type="text"]:focus {
+    box-shadow: 0 0 0 2px var(--primary-blue);
+    border-color: var(--primary-blue);
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+.form-row .input-group {
+    flex: 1;
+}
+
+button[type="submit"], .submit-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--primary-blue);
+    color: var(--text-button);
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background-color 0.3s;
+}
+
+button[type="submit"]:hover, .submit-btn:hover {
+    background-color: var(--primary-blue-hover);
+}
+
+.forgot, .account {
+    text-align: center;
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--primary-blue);
+    text-decoration: none;
+}
+
+.forgot:hover, .account:hover {
+    text-decoration: underline;
+}
+
+.right img, .logo-section img {
+    max-width: 250px;
+    height: auto;
+    object-fit: contain;
+    border-radius: 15px;
+    border: 6px solid var(--image-border-primary);
+    outline: 4px solid var(--image-outline);
+    outline-offset: 5px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 0;
+    }
+
+    .container, .main-container {
+        flex-direction: column;
+        padding: 0;
+        width: 100%;
+        max-width: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .login-box {
+        flex-direction: column; 
+    }
+    
+    .left, .form-section {
+        padding: 2rem 1.5rem;
+        min-height: 50vh; 
+    }
+    
+    .right, .logo-section {
+        padding: 2rem 1.5rem;
+        order: -1; 
+    }
+
+    @media (max-width: 480px) {
+        .right, .logo-section {
+            display: none;
+        }
+        .left, .form-section {
+            min-height: 100vh;
+        }
+    }
+}

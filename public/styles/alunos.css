@@ -1,0 +1,91 @@
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.page-header h2 { margin: 0; }
+
+.page-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+#remove-selecionados-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.table-container {
+    padding: 0;
+    overflow-x: auto;
+}
+.table-container p#empty-state-msg {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text-primary);
+}
+table thead {
+    background-color: #f9f9f9;
+}
+table th, table td {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+table th {
+    font-size: 0.85rem;
+    color: var(--text-label);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.col-checkbox {
+    width: 60px;
+    text-align: center;
+}
+.cell-checkbox {
+    text-align: center;
+}
+.col-matricula { width: 25%; }
+.col-nome { width: 50%; }
+.col-acoes { width: 25%; text-align: right; }
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+.btn-table-action {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    padding: 5px 8px;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+}
+.btn-table-action.btn-edit {
+    color: var(--primary-blue);
+}
+.btn-table-action.btn-edit:hover {
+    background-color: #e0eafc; 
+}
+.btn-table-action.btn-remove {
+    color: red;
+}

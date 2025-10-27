@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lançar Notas - Projeto NotaDez</title>
+    <link rel="stylesheet" href="/styles/dashboard.css">
+    <link rel="stylesheet" href="/styles/notas.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container">
+            <h1>Projeto NotaDez</h1>
+            <nav>
+                <a href="/dashboard.html" class="btn-secondary-nav">Minhas Instituições</a>
+                <a href="/disciplinas.html" class="btn-secondary-nav">Disciplinas</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>Lançar Notas: Projeto Integrador 2 - Turma 1</h2>
+            <div class="page-actions">
+                <button id="export-csv-btn" class="btn-secondary">
+                    Exportar Notas (CSV)
+                </button>
+            </div>
+        </div>
+
+        <div class="edit-controls card">
+            <span>Editar notas para:</span>
+            <div class="component-edit-buttons">
+                <button class="btn-secondary-small btn-edit-component" data-componente="P1">P1</button>
+                <button class="btn-secondary-small btn-edit-component" data-componente="P2">P2</button>
+            </div>
+            <div class="active-edit-buttons" style="display: none;">
+                 <p id="editing-component-label" class="editing-label">Editando notas de: <strong>--</strong></p>
+                 <button id="save-notes-btn" class="btn-primary">Salvar Notas</button>
+                 <button id="cancel-edit-btn" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+
+        <section class="table-container card">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-matricula">Matrícula</th>
+                        <th class="col-nome">Nome Aluno</th>
+                        <th class="col-nota component-header" data-componente="P1">P1</th>
+                        <th class="col-nota component-header" data-componente="P2">P2</th>
+                        <th class="col-nota-final">Nota Final</th>
+                    </tr>
+                </thead>
+                <tbody id="notas-tabela-body">
+                    <tr>
+                        <td>100</td>
+                        <td>Pessoa 1</td>
+                        <td class="cell-nota" data-componente="P1">
+                            <span>10.00</span>
+                            <input type="number" min="0" max="10" step="0.01">
+                        </td>
+                        <td class="cell-nota" data-componente="P2">
+                            <span>8.50</span>
+                            <input type="number" min="0" max="10" step="0.01">
+                        </td>
+                        <td class="cell-nota-final">
+                            <span data-aluno-id="100">-</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>101</td>
+                        <td>Pessoa 2</td>
+                        <td class="cell-nota" data-componente="P1">
+                            <span>5.00</span>
+                            <input type="number" min="0" max="10" step="0.01">
+                        </td>
+                        <td class="cell-nota" data-componente="P2">
+                            <span>7.00</span>
+                            <input type="number" min="0" max="10" step="0.01">
+                        </td>
+
+                        <td class="cell-nota-final">
+                            <span data-aluno-id="101">-</span>
+                        </td>
+                    </tr>
+                     <tr>
+                        <td>102</td>
+                        <td>Pessoa 3</td>
+                        <td class="cell-nota" data-componente="P1">
+                            <span>-</span>
+                            <input type="number" min="0" max="10" step="0.01">
+                        </td>
+                        <td class="cell-nota" data-componente="P2">
+                            <span>-</span>
+                            <input type="number" min="0" max="10" step="0.01">
+                        </td>
+                        <td class="cell-nota-final">
+                             <span data-aluno-id="102">-</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>

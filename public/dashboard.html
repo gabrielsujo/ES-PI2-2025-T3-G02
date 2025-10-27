@@ -4,20 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Projeto NotaDez</title>
-    <link rel="stylesheet" href="./styles/dashboard.css">
+    <link rel="stylesheet" href="/styles/dashboard.css">
 </head>
 <body>
     <header class="app-header">
         <div class="container">
             <h1>Projeto NotaDez</h1>
-            <button id="logout-button" class="btn-secondary">Sair</button>
+            <nav>
+                <button id="logout-button" class="btn-secondary">Sair</button>
+            </nav>
         </div>
     </header>
 
     <main class="container">
         <div class="dashboard-header">
             <h2>Minhas Instituições</h2>
-            <button id="add-instituição-btn" class="btn-primary">
+            <button id="add-instituicao-btn" class="btn-primary">
                 + Adicionar Instituição
             </button>
         </div>
@@ -26,10 +28,16 @@
             <article class="card">
                 <div class="card-content">
                     <h3>PUC-Campinas</h3>
-                    <p>Engenharia de software</p>
+                    <p class="card-subtitle">Projeto Integrador 2</p>
                 </div>
-                <div class="card-actions">
-                    <a href="#" class="btn-secondary"> <!-- link para onde esta armazenada as dicipinhas-->
+                <div class="card-actions card-actions-multi">
+                    <button class="btn-danger-outline btn-excluir" 
+                            data-id="1" 
+                            data-nome="PUC-Campinas" 
+                            data-tipo="instituicao">
+                        Remover
+                    </button>
+                    <a href="/disciplinas.html" class="btn-secondary">
                         Gerenciar Disciplinas
                     </a>
                 </div>
@@ -38,10 +46,16 @@
             <article class="card">
                 <div class="card-content">
                     <h3>Unicamp</h3>
-                    <p>Ciência da computação</p>
+                    <p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p>
                 </div>
-                <div class="card-actions">
-                    <a href="#" class="btn-secondary"> <!-- link para onde esta armazenada as dicipinhas-->
+                <div class="card-actions card-actions-multi">
+                     <button class="btn-danger-outline btn-excluir" 
+                            data-id="2" 
+                            data-nome="Unicamp" 
+                            data-tipo="instituicao">
+                        Remover
+                    </button>
+                    <a href="/disciplinas.html" class="btn-secondary">
                         Gerenciar Disciplinas 
                     </a>
                 </div>
@@ -49,9 +63,44 @@
 
             <p id="empty-state-msg" style="display: none;">
                 Você ainda não cadastrou nenhuma instituição.
-                Use o botão "+ Adicionar Instituição" para comerçar.
             </p>
         </section>
     </main>
+
+    <div id="modal-instituicao" class="modal-overlay" style="display: none;">
+         <div class="modal-content card">
+            <div class="modal-header">
+                <h3 id="modal-instituicao-title">Adicionar Nova Instituição</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <form id="form-instituicao">
+                <div class="input-group">
+                    <label for="instituicao-nome">NOME DA INSTITUIÇÃO</label>
+                    <input type="text" id="instituicao-nome" name="nome" placeholder="Ex: PUC-Campinas" required>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar Instituição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-confirmar-exclusao" class="modal-overlay" style="display: none;">
+        <div class="modal-content card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 id="modal-exclusao-title">Confirmar Exclusão</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-exclusao-msg">Tem certeza? Lembre-se de remover todos os itens associados primeiro.</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
+                <button type="submit" id="btn-confirmar-exclusao-sim" class="btn-danger">Sim, excluir</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

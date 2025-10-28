@@ -4,6 +4,7 @@ import path from 'path';
 
 //importar rotas e bancos
 import authRoutes from './routes/authRoutes';
+import instituicaoRoutes from './routes/instituicaoRoutes'
 import pool from './config/db'
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true}));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/api', authRoutes);
+app.use('/api', instituicaoRoutes);
 
 app.get('/', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));

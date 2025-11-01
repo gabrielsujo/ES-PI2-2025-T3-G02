@@ -41,7 +41,7 @@ router.get('/instituicoes', async (req, res) => {
 });
 
 router.delete('/insituicoes/:id', async (req, res) => {
-    const { id } = res.params;
+    const { id } = req.params;
     const usuarioIdFixo = 1;
 
     try {

@@ -8,35 +8,6 @@ const router = Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret_key';
 
-// Interface para estender o objeto Request e adicionar 'userId'
-export interface AuthRequest extends Request {
-    userId?: number;
-}
-
-// ---------------- MIDDLEWARE DE AUTENTICAÇÃO ( BLOQUEIO)----------
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (token == null) {
-        // 401 Unauthorized - Bloqueia se não houver token
-        return res.status(401).json({ error: 'Acesso negado. Token de autenticação não fornecido.' });
-    }
-
-    // 2. Verifica se o token é válido e não expirou
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            // 403 Forbidden - Bloqueia se o token for inválido
-            return res.status(403).json({ error: 'Token inválido ou expirado.' });
-        }
-
-        // 3. Token válido: Adiciona o ID do usuário ao objeto Request
-        req.userId = (user as JwtPayload).userId; 
-        
-        // 4. Permite que a rota continue
-        next();
-    });
-};
 
 // --------- ROTA DE REGISTRO --------- 
 router.post('/register', async (req: Request, res: Response) => {

@@ -32,6 +32,10 @@ router.post('/instituicoes', async (req, res) => {
 router.get('/instituicoes', async (req: AuthRequest, res) => {
     const usuarioId = req.userId;
 
+    if (!usuarioId) { 
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
+
     try{
         const instituicoes = await pool.query(
             'SELECT * FROM instituicoes WHERE usuario_id = $1 ORDER BY nome',
@@ -48,6 +52,10 @@ router.get('/instituicoes', async (req: AuthRequest, res) => {
 router.delete('/insituicoes/:id', async (req: AuthRequest, res) => {
     const { id } = req.params;
     const usuarioId = req.userId;
+
+    if (!usuarioId) { // << ADICIONADO: Checagem de segurança
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
     
     try {
         const result = await pool.query(

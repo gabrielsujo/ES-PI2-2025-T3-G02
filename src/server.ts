@@ -10,6 +10,7 @@ import alunosRoutes from './routes/alunoRoutes';
 import componenteRoutes from './routes/componenteRoutes';
 import notaRoutes from './routes/notaRoutes';
 import pool from './config/db'
+import { authenticateToken } from './middlewares/authMiddleware';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -19,12 +20,19 @@ app.use(express.urlencoded({ extended: true}));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+
+// ROTA PÚBLICA: Login e Registro
 app.use('/api', authRoutes);
-app.use('/api', instituicaoRoutes);
-app.use('/api', disciplinaRoutes);
-app.use('/api', alunosRoutes);
-app.use('/api', componenteRoutes);
-app.use('/api', notaRoutes);
+
+// ROTAS PROTEGIDAS (NÍVEL 1):
+app.use('/api', authenticateToken, instituicaoRoutes);
+app.use('/api', authenticateToken, disciplinaRoutes);
+app.use('/api', authenticateToken, alunosRoutes);
+app.use('/api', authenticateToken, componenteRoutes);
+app.use('/api', authenticateToken, notaRoutes);
+
+// ... (Restante do seu código)
+
 
 //rota principal
 app.get('/', (req: Request, res: Response) => {

@@ -1,11 +1,16 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import pool from '../config/db';
+import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 router.post('/instituicoes', async (req, res) => {
     const { nome } = req.body;
-    const usuarioIdFixo = 1;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) { 
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     if(!nome) {
         return res.status(400).json({error: 'O nome da instituição é obrigatorio'});
@@ -14,7 +19,7 @@ router.post('/instituicoes', async (req, res) => {
     try {
         const novaInstituicao = await pool.query(
             'INSERT INTO instituicoes (nome,usuario_id) VALUE ($1, $2) RETURNING *', 
-            [nome, usuarioIdFixo]
+            [nome, usuarioId]
         );
 
         res.status(201).json(novaInstituicao.rows[0]);
@@ -24,13 +29,13 @@ router.post('/instituicoes', async (req, res) => {
     }
 });
 
-router.get('/instituicoes', async (req, res) => {
-    const usuarioIdFixo = 1;
+router.get('/instituicoes', async (req: AuthRequest, res) => {
+    const usuarioId = req.userId;
 
     try{
         const instituicoes = await pool.query(
             'SELECT * FROM instituicoes WHERE usuario_id = $1 ORDER BY nome',
-            [usuarioIdFixo]
+            [usuarioId]
         );
 
         res.status(200).json(instituicoes.rows)
@@ -40,14 +45,14 @@ router.get('/instituicoes', async (req, res) => {
     }
 });
 
-router.delete('/insituicoes/:id', async (req, res) => {
+router.delete('/insituicoes/:id', async (req: AuthRequest, res) => {
     const { id } = req.params;
-    const usuarioIdFixo = 1;
-
+    const usuarioId = req.userId;
+    
     try {
         const result = await pool.query(
             'DELETE FROM instituicoes WHERE id = $1 AND usuario_id = $2 RETURNING *',
-            [id, usuarioIdFixo]
+            [id, usuarioId]
         );
 
         if (result.rows.length === 0) {

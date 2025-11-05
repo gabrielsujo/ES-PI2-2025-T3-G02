@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import pool from '../config/db';
+import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-const usuarioIdFixo = 1;
 
-router.get('/turmas/:turma_id/alunos', async (req, res) =>{
+
+router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     try { 
         const turmaCheck = await pool.query(
@@ -14,7 +20,7 @@ router.get('/turmas/:turma_id/alunos', async (req, res) =>{
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 i.usuario_id = $2`,
-            [turma_id, usuarioIdFixo]
+            [turma_id, usuarioId]
         );
         if(turmaCheck.rows.length === 0) { 
             return res.status(404).json({ error: 'Turmea não encontrada ou não autorizada.'});
@@ -32,8 +38,13 @@ router.get('/turmas/:turma_id/alunos', async (req, res) =>{
     }
 });
 
-router.post('/alunos', async(req, res) =>{
+router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
     const { matricula, nome, turma_id } = req.body;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     if (!matricula || !nome || !turma_id) {
         return res.status(400).json({ error: 'Matrícula, nome e ID da turma são obrigatórios.' });
@@ -45,7 +56,7 @@ router.post('/alunos', async(req, res) =>{
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 AND i.usuario_id = $2`,
-            [turma_id, usuarioIdFixo]
+            [turma_id, usuarioId]
         );
         if(turmaCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Ação não autorizada.'});
@@ -63,10 +74,15 @@ router.post('/alunos', async(req, res) =>{
     }
 });
 
-router.put('/alunos/:id', async(req, res) => {
+router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     const { id } = req.params;
     const { matricula, nome } = req.body;
+    const usuarioId = req.userId;
 
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
+    
     if(!matricula || !nome) {
         return res.status(400).json({ error: 'Matrícula e nome são obrigatórios. '});
     }
@@ -78,7 +94,7 @@ router.put('/alunos/:id', async(req, res) => {
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE a.id = $1 i.usuario_id = $2`,
-            [id, usuarioIdFixo]
+            [id, usuarioId]
         );
 
         if (alunoCheck.rows.length === 0) {
@@ -97,8 +113,14 @@ router.put('/alunos/:id', async(req, res) => {
     }
 });
 
-router.delete('/alunos/:id', async(req, res) => {
+router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     const { id } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
+
 
     try {
         const alunoCheck = await pool.query(
@@ -107,7 +129,7 @@ router.delete('/alunos/:id', async(req, res) => {
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instiuicao_id = i.id
             WHERE a.id = $1 AND i.usuario_id = $2`,
-            [id, usuarioIdFixo]
+            [id, usuarioId]
         );
 
         if(alunoCheck.rows.length === 0) {

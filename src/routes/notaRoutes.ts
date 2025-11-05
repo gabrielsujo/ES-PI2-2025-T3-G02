@@ -1,11 +1,17 @@
 import { Router } from 'express';
 import pool from '../config/db';
+import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
-const usuarioIdFixo = 1;
 
-router.get('/turmas/:turma_id/notas', async (req, res) =>{
+
+router.get('/turmas/:turma_id/notas', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
+    const usuarioId = req.userId; 
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.' });
+    }
 
     try{
         //verificar se a turma pertence ao utilizador
@@ -14,7 +20,7 @@ router.get('/turmas/:turma_id/notas', async (req, res) =>{
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 AND i.usuario_id = $2`,
-            [turma_id, usuarioIdFixo]
+            [turma_id, usuarioId]
         );
         if(turmaCheck.rows.length === 0 ) {
             return res.status(404).json({ error: 'Turma não encontrada ou não autorizada.' });
@@ -37,10 +43,15 @@ router.get('/turmas/:turma_id/notas', async (req, res) =>{
     }
 });
 
-router.post('/notas/salvar', async (req, res) => {
+router.post('/turmas/:turma_id/notas', authenticateToken, async (req: AuthRequest, res) => {
     //o front vai enviar um array de notas
     const notas: {aluno_id:number, componente_id:number, valor:number | null }[] = req.body.notas;
     const turma_id = req.body.turma_id; //isso para segurança
+    const usuarioId = req.userId; 
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.' });
+    }
 
     if (!Array.isArray(notas) || !turma_id || notas.length === 0) {
         return res.status(400).json({ error: 'Formato de dados inválidos.' });
@@ -53,7 +64,7 @@ router.post('/notas/salvar', async (req, res) => {
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 i.usuario_id = $2`,
-            [turma_id, usuarioIdFixo]
+            [turma_id, usuarioId]
         );
         if(turmaCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Ação nâo autorizada.' });

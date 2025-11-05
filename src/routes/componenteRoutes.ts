@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import pool from '../config/db';
+import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 const usuarioIdFixo = 1;
 
-router.get('/disciplinas/:disciplina_id/componentes', async(req, res) => {
+router.get('/disciplinas/:disciplina_id/componentes', authenticateToken, async(req: AuthRequest, res) => {
     const { disciplina_id} = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
+
 
     try {
         // verificar se a disciplina pertence ao utilizador
@@ -13,7 +20,7 @@ router.get('/disciplinas/:disciplina_id/componentes', async(req, res) => {
             `SELECT d.id, d.formula_calculo FROM disciplina d
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE d.id = $1 AND i.usuario_id = $2`,
-            [disciplina_id, usuarioIdFixo]
+            [disciplina_id, usuarioId]
         );
         if( disciplinaCheck.rows.length === 0) {
             return res.status(400).json({ error: 'Disciplina não encontrada ou não autorizada.'});
@@ -36,8 +43,13 @@ router.get('/disciplinas/:disciplina_id/componentes', async(req, res) => {
     }
 });
 
-router.post('/componentes', async (req, res) => {
+router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
     const { nome, sigla, desc, disciplina_id } = req.body; // desc vem do form
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     if(!nome || !sigla || !desc || !disciplina_id) {
         return res.status(400).json({ error: 'Nome, sigla e ID são obrigatórios. '});
@@ -49,7 +61,7 @@ router.post('/componentes', async (req, res) => {
         `SELECT d.id FROM disciplina d
         JOIN instituicoes i ON d.instituicao_id = i.id
         WHERE d.id = $1 AND i.usuario_id = $2`,
-        [disciplina_id, usuarioIdFixo]
+        [disciplina_id, usuarioId]
         );
         if(disciplinaCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Ação não autorizada.' });
@@ -69,9 +81,14 @@ router.post('/componentes', async (req, res) => {
     }
 });
 
-router.put('componentes/:id', async(req, res) =>{
+router.put('/disciplinas/:disciplina_id/formula', authenticateToken, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const { nome, sigla, desc } = req.body;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     if (!nome || !sigla) {
         return res.status(400).json({ error: 'Nome e sigla são obrigatórios' });
@@ -84,7 +101,7 @@ router.put('componentes/:id', async(req, res) =>{
             JOIN disciplinas d ON c.disciplina_id = d.id
             JOIN insituicoes i ON d.instituicao_id = i.id
             WHERE c.id = $1 AND i.usuario_id = $2`,
-            [id, usuarioIdFixo]
+            [id, usuarioId]
         );
         if (check.rows.length === 0) {
             return res.status(404).json({ error: 'Componente não encontrado ou não autorizado.' });
@@ -104,8 +121,13 @@ router.put('componentes/:id', async(req, res) =>{
     }
 });
 
-router.delete('/componentes/:id', async (req, res) => {
+router.delete('/componentes/:id', authenticateToken, async(req: AuthRequest, res) => {
     const { id } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     try{
         // vefiricar se o componente percetence ao utilizador
@@ -114,7 +136,7 @@ router.delete('/componentes/:id', async (req, res) => {
             JOIN disciplinas d ON c.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE c.id = $1 AND i.usuario_id = $2`,
-            [id, usuarioIdFixo]
+            [id, usuarioId]
         );
         if (check.rows.length === 0) {
             return res.status(404).json({ error: 'componente não encontrado ou não autorizado. '});
@@ -130,9 +152,14 @@ router.delete('/componentes/:id', async (req, res) => {
     }
 });
 
-router.put('/discplinas/:disciplina_id/formula', async (req, res) => {
+router.put('/disciplinas/:disciplina_id/formula', authenticateToken, async (req: AuthRequest, res) => {
     const { disciplina_id } = req.params;
     const { formula } = req.body;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
 
     try {
         // verificar se discplina pertence ao utilizador
@@ -140,7 +167,7 @@ router.put('/discplinas/:disciplina_id/formula', async (req, res) => {
             `SELECT d.id FROM disciplina d
             JOIN insituicoes i ON d.instituicao_id = i.id
             WHERE d.id = $1 AND i.usuario_id =$2`,
-            [disciplina_id, usuarioIdFixo]
+            [disciplina_id, usuarioId]
         );
         if (disciplinaCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Disciplina não encontrada ou não autorizada.' });

@@ -3,7 +3,6 @@ import pool from '../config/db';
 import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
-const usuarioIdFixo = 1;
 
 router.get('/disciplinas/:disciplina_id/componentes', authenticateToken, async(req: AuthRequest, res) => {
     const { disciplina_id} = req.params;

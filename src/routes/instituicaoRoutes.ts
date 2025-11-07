@@ -4,7 +4,7 @@ import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.post('/instituicoes', async (req, res) => {
+router.post('/instituicoes', async (req:AuthRequest, res) => {
     const { nome } = req.body;
     const usuarioId = req.userId;
 

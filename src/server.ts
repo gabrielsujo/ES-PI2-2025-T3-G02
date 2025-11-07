@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config()
 import 'dotenv/config';
 import express, {Request, Response, NextFunction } from 'express';
 import path from 'path';
@@ -9,11 +11,23 @@ import disciplinaRoutes from './routes/diciplinaRoutes';
 import alunosRoutes from './routes/alunoRoutes';
 import componenteRoutes from './routes/componenteRoutes';
 import notaRoutes from './routes/notaRoutes';
-import pool from './config/db'
 import { authenticateToken } from './middlewares/authMiddleware';
 
 const app = express();
 const port = process.env.PORT || 3000;
+// conecta cm o banco de dados
+import { connectToDB } from './config/db'; // Importa a *função* de conexão
+const startServer = async ()=> {
+    try {
+        await connectToDB();
+        app.listen(port,() => {
+            console.log(`Servidor rodando em http:localhost:${port}`);
+        });
+    } catch (error) {
+        console.error('Falha ao iniciar o servidor',error);
+    }
+};
+startServer();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
@@ -55,7 +69,3 @@ app.get('/componentes.html', (req: Request, res: Response) => {
 app.get('/notas.html', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'notas.html'));
 });
-
-app.listen(port, () => {
-    console.log(`servidor rodando em http:localhost:${port}`);
-})

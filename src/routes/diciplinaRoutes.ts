@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import pool from '../config/db';
-import { Colors } from 'discord.js';
 import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 
 const router = Router();

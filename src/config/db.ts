@@ -10,12 +10,20 @@ const pool = new Pool({
     port: Number(process.env.DB_PORT || 5432), 
 });
 
-pool.connect((err, client, release) =>{
-    if (err) {
-        return console.error('Erro ao conectar com o banco de dados', err.stack);
-    }
-    console.log('Conexão com o postgreSQL estabelecida com sucesso!');
-    release();
-})
+/**
+ funcao pra testar a conexao com o banco,
+ o server.ts vai usar essa função pra conectar com o banco
+ */
+export const connectToDB = async () => {
+  try {
+    const client = await pool.connect();
+    await client.query('SELECT NOW()'); // testa a conexão
+    client.release(); // volta pra pool
 
+    console.log('✅ conexao com o PostgreSQL estabelecida com sucesso!');
+  } catch (err) {
+    console.error('❌ erro ao conectar com o banco de dados', err);
+    process.exit(1); 
+  }
+};
 export default pool;

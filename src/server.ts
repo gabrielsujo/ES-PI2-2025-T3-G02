@@ -45,7 +45,6 @@ app.use('/api', authenticateToken, alunosRoutes);
 app.use('/api', authenticateToken, componenteRoutes);
 app.use('/api', authenticateToken, notaRoutes);
 
-// ... (Restante do seu código)
 
 
 //rota principal

@@ -65,6 +65,7 @@ create table Notas (
 	componente_id INT NOT NULL,
 	matricula_id INT NOT NULL,
 	FOREIGN KEY (componente_id) references Componentes(id) ON DELETE CASCADE,
-	foreign key (matricula_id) references Matriculas(id) ON DELETE CASCADE,
+	foreign key (matricula_id) references Matriculas(id) ON DELETE CASCADE
 	
+
 );

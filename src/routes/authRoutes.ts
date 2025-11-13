@@ -31,8 +31,8 @@ router.post('/register', async (req: Request, res: Response) => {
 
         //inserir o novo usuario no banco
         const novoUsuarioResult = await pool.query (
-            'INSERT INTO Professores (nome, email, senha_hash, telefone) VALUES ($1, $2, $3) RETURNING id, email',
-            [nome, email, senhaHash]
+            'INSERT INTO Professores (nome, email, senha_hash, telefone) VALUES ($1, $2, $3, $4) RETURNING id, email',
+            [nome, email, senhaHash, telefone]
         );
         const novoUsuario = novoUsuarioResult.rows[0];
 

@@ -1,4 +1,3 @@
-
 :root {
 
     --background-page: #D9D9D9;
@@ -101,6 +100,13 @@ form > label {
     margin-bottom: 5px;
     text-transform: uppercase;
 }
+
+
+.input-group label::after {
+    content: " *";
+    color: red;
+}
+
 
 .input-group input,
 form > input[type="email"],

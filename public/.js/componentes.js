@@ -1,4 +1,4 @@
-import { generateFormula } from './GerarFormula.ts';
+import { generateFormula } from '../src/utils/GerarFormula.ts';
 
 // --- ELEMENTOS DOM ---
 const form = document.getElementById('form-formula-config');

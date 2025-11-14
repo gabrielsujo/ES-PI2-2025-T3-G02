@@ -8,7 +8,6 @@ create table Professores (
 create table Instituicoes (
 	id SERIAL PRIMARY KEY,
 	nome VARCHAR(255) NOT NULL,
-
 	usuario_id INT NOT NULL,
 	FOREIGN KEY (usuario_id) REFERENCES Professores(id)
 		ON DELETE CASCADE
@@ -19,7 +18,6 @@ create table Disciplinas (
 	codigo VARCHAR(50),
 	sigla VARCHAR(20),
 	periodo VARCHAR(100),
-	formula_calculo VARCHAR(500),
 	instituicao_id INT NOT NULL,
 	FOREIGN KEY (instituicao_id) REFERENCES Instituicoes(id)
 		ON DELETE  CASCADE
@@ -48,17 +46,27 @@ create table Alunos (
 	id SERIAL PRIMARY KEY,
 	nome VARCHAR(255) NOT NULL,
 	matricula VARCHAR(50),
-	turma_id INT NOT NULL,
-	FOREIGN KEY (turma_id) REFERENCES Turmas(id)
+	professor_id INT NOT NULL,
+	FOREIGN KEY (professor_id) REFERENCES Professores(id)
 		ON DELETE CASCADE
+);
+
+CREATE TABLE Matriculas (
+	id SERIAL PRIMARY KEY,
+	aluno_id INT NOT NULL,
+	turma_id INT NOT NULL,
+	FOREIGN KEY (aluno_id) REFERENCES Alunos(id) ON DELETE CASCADE,
+	FOREIGN KEY (turma_id) REFERENCES Turmas(id) ON DELETE CASCADE,
+	UNIQUE(aluno_id, turma_id)
 );
 
 create table Notas (
 	id SERIAL PRIMARY KEY,
 	valor DECIMAL(4,2) NOT NULL,
 	componente_id INT NOT NULL,
-	aluno_id INT NOT NULL,
+	matricula_id INT NOT NULL,
 	FOREIGN KEY (componente_id) references Componentes(id) ON DELETE CASCADE,
-	foreign key (aluno_id) references Alunos(id) ON DELETE CASCADE
+	foreign key (matricula_id) references Matricula(id) ON DELETE CASCADE
 	);
+
 

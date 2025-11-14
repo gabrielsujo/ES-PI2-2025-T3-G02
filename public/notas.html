@@ -30,10 +30,8 @@
 
         <div class="edit-controls card">
             <span>Editar notas para:</span>
-            <div class="component-edit-buttons">
-                <button class="btn-secondary-small btn-edit-component" data-componente="P1">P1</button>
-                <button class="btn-secondary-small btn-edit-component" data-componente="P2">P2</button>
-            </div>
+            <div class="component-edit-buttons" id="dynamic-edit-buttons">
+                </div>
             <div class="active-edit-buttons" style="display: none;">
                  <p id="editing-component-label" class="editing-label">Editando notas de: <strong>--</strong></p>
                  <button id="save-notes-btn" class="btn-primary">Salvar Notas</button>
@@ -44,11 +42,9 @@
         <section class="table-container card">
             <table>
                 <thead>
-                    <tr>
+                    <tr id="notas-table-header-row"> 
                         <th class="col-matricula">Matrícula</th>
                         <th class="col-nome">Nome Aluno</th>
-                        <th class="col-nota component-header" data-componente="P1">P1</th>
-                        <th class="col-nota component-header" data-componente="P2">P2</th>
                         <th class="col-nota-final">Nota Final</th>
                     </tr>
                 </thead>
@@ -56,14 +52,6 @@
                     <tr>
                         <td>100</td>
                         <td>Pessoa 1</td>
-                        <td class="cell-nota" data-componente="P1">
-                            <span>10.00</span>
-                            <input type="number" min="0" max="10" step="0.01">
-                        </td>
-                        <td class="cell-nota" data-componente="P2">
-                            <span>8.50</span>
-                            <input type="number" min="0" max="10" step="0.01">
-                        </td>
                         <td class="cell-nota-final">
                             <span data-aluno-id="100">-</span>
                         </td>
@@ -71,15 +59,6 @@
                     <tr>
                         <td>101</td>
                         <td>Pessoa 2</td>
-                        <td class="cell-nota" data-componente="P1">
-                            <span>5.00</span>
-                            <input type="number" min="0" max="10" step="0.01">
-                        </td>
-                        <td class="cell-nota" data-componente="P2">
-                            <span>7.00</span>
-                            <input type="number" min="0" max="10" step="0.01">
-                        </td>
-
                         <td class="cell-nota-final">
                             <span data-aluno-id="101">-</span>
                         </td>
@@ -87,14 +66,6 @@
                      <tr>
                         <td>102</td>
                         <td>Pessoa 3</td>
-                        <td class="cell-nota" data-componente="P1">
-                            <span>-</span>
-                            <input type="number" min="0" max="10" step="0.01">
-                        </td>
-                        <td class="cell-nota" data-componente="P2">
-                            <span>-</span>
-                            <input type="number" min="0" max="10" step="0.01">
-                        </td>
                         <td class="cell-nota-final">
                              <span data-aluno-id="102">-</span>
                         </td>

@@ -19,11 +19,11 @@ router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthReques
             `SELECT t.id FROM turmas t
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE t.id = $1 i.usuario_id = $2`,
+            WHERE t.id = $1 AND i.usuario_id = $2`,
             [turma_id, usuarioId]
         );
         if(turmaCheck.rows.length === 0) { 
-            return res.status(404).json({ error: 'Turmea não encontrada ou não autorizada.'});
+            return res.status(404).json({ error: 'Turma não encontrada ou não autorizada.'});
         }
 
         const alunosResult = await pool.query(
@@ -93,7 +93,7 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
             JOIN turmas t ON a.turma_id = t.id
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE a.id = $1 i.usuario_id = $2`,
+            WHERE a.id = $1 AND i.usuario_id = $2`,
             [id, usuarioId]
         );
 
@@ -127,7 +127,7 @@ router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => 
             `SELECT a.id FROM alunos a
             JOIN turmas t ON a.turma_id = t.id
             JOIN disciplinas d ON t.disciplina_id = d.id
-            JOIN instituicoes i ON d.instiuicao_id = i.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE a.id = $1 AND i.usuario_id = $2`,
             [id, usuarioId]
         );

@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import pool from '../config/db';
 import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
+import multer from 'multer';
+import csvParser from 'csv-parser';
+import { Readable } from 'stream';
 
 const router = Router();
-
-
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
@@ -142,6 +145,93 @@ router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => 
     } catch(err) {
         console.error(err);
         res.status(500).json({ error: 'Erro interno do servidor. Verifique se existem notas associadas.' });
+    }
+});
+
+router.post(
+    '/turmas/:turma_id/alunos/importar-csv',
+    authenticateToken,
+    upload.single('csvFile'),
+    async (req: AuthRequest, res) => {
+    
+    const { turma_id } = req.params;
+    const usuarioId = req.userId;
+
+    if (!req.file) {
+        return res.status(400).json({ error: 'Nenhum arquivo CSV enviado.'});
+
+    }
+    try {
+        const turmaCheck = await pool.query(
+            `SELECT t.id FROM turmas t
+            JOIN disciplinas d ON t.discplina_id = d.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
+            WHERE t.id = $1 AND i.usuario_id = $2`
+        );
+        if (turmaCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Ação não autorizada.' });
+        }
+
+        // buscaar matricula existentes para não ter duplicatas
+        const existentesResult = await pool.query(
+            'SELECT matricula FROM alunos WHERE turma_id = $1',
+            [turma_id]
+        );
+        const matriculaExistentes = new Set(existentesResult.rows.map(r => r.matricula));
+
+        const alunosParaAdicionar: { matricula: string, nome: string } [] = [];
+
+        //processar o buffer do arquivo csv
+        const bufferStream = new Readable();
+        bufferStream.push(req.file.buffer);
+        bufferStream.push(null);
+
+        await new Promise<void>((resolve, reject) => {
+            bufferStream
+            .pipe(csvParser({
+                headers: ['matricula', 'nome'], // nome temporario
+                skipLines: 1 // pula a linha do cabeçalho 
+            }))
+            .on('data', (row) => {
+                const matricula = row.matricula?.trim();
+                const nome = row.nome?.trim();
+                
+                //validar e verificar duplicatas
+                if (matricula && nome && !matriculaExistentes.has(matricula)) {
+                    matriculaExistentes.add(matricula);
+                }
+            })
+            .on('end', resolve)
+            .on('error', reject);
+        });
+
+        if (alunosParaAdicionar.length > 0) {
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                for (const aluno of alunosParaAdicionar) {
+                    await client.query(
+                        'INSERT INTO alunos (matricula, nome, turma_id) VALUES ($1, $2, $3)',
+                        [aluno.matricula, aluno.nome, turma_id]
+                    );
+                }
+                await client.query('COMMIT');
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
+            }
+        }
+
+        res.status(201).json({
+            message: `${alunosParaAdicionar.length} alunos importados com sucesso.`,
+            importados: alunosParaAdicionar.length
+        });
+
+    } catch(err) {
+        console.error('Erro na importação de CSV', err);
+        res.status(500).json({ error: 'Erro interno de servidor ao processar o CSV' });
     }
 });
 

@@ -49,7 +49,7 @@ router.get('/instituicoes', async (req: AuthRequest, res) => {
     }
 });
 
-router.delete('/instiuicoes/:id', async (req: AuthRequest, res) => {
+router.delete('/instituicoes/:id', async (req: AuthRequest, res) => {
     const { id } = req.params;
     const usuarioId = req.userId;
 

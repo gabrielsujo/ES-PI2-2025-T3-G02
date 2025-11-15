@@ -18,7 +18,7 @@ router.post('/instituicoes', async (req:AuthRequest, res) => {
 
     try {
         const novaInstituicao = await pool.query(
-            'INSERT INTO instituicoes (nome,usuario_id) VALUE ($1, $2) RETURNING *', 
+            'INSERT INTO instituicoes (nome,usuario_id) VALUES ($1, $2) RETURNING *', 
             [nome, usuarioId]
         );
 
@@ -49,7 +49,7 @@ router.get('/instituicoes', async (req: AuthRequest, res) => {
     }
 });
 
-router.delete('/insituicoes/:id', async (req: AuthRequest, res) => {
+router.delete('/instiuicoes/:id', async (req: AuthRequest, res) => {
     const { id } = req.params;
     const usuarioId = req.userId;
 

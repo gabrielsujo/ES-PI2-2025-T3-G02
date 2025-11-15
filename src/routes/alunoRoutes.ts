@@ -30,7 +30,7 @@ router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthReques
         }
 
         const alunosResult = await pool.query(
-            'SELECT * FROM alunos WHERE turma_id = $1 ORDER BY nome',
+            'SELECT id, matricula, nome, turma_id FROM alunos WHERE turma_id = $1 ORDER BY nome',
             [turma_id]
         );
 
@@ -66,13 +66,16 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         }
 
         const novoAluno = await pool.query(
-            'INSERT INTO alunos (matricula, nome, turma_id) VALUES ($1, $2, $3) RETURNING *',
+            'INSERT INTO alunos (matricula, nome, turma_id) VALUES ($1, $2, $3) RETURNING id, matricula, nome, turma_id',
             [matricula, nome, turma_id]
         );
 
         res.status(201).json(novoAluno.rows[0]);
     } catch(err){
         console.error(err);
+        if (err.code === '23505') { 
+            return res.status(409).json({ error: 'Matrícula já cadastrada.' });
+        }
         res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 });
@@ -105,7 +108,7 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
         }
 
         const alunoAtualizado = await pool.query(
-            'UPDATE alunos SET matricula = $1, nome = $2 WHERE id = $3 RETURNING *',
+            'UPDATE alunos SET matricula = $1, nome = $2 WHERE id = $3 RETURNING id, matricula, nome, turma_id',
             [matricula, nome, id]
         );
 
@@ -164,7 +167,7 @@ router.post(
     try {
         const turmaCheck = await pool.query(
             `SELECT t.id FROM turmas t
-            JOIN disciplinas d ON t.discplina_id = d.id
+            JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 AND i.usuario_id = $2`
         );
@@ -199,6 +202,7 @@ router.post(
                 //validar e verificar duplicatas
                 if (matricula && nome && !matriculaExistentes.has(matricula)) {
                     matriculaExistentes.add(matricula);
+                    alunosParaAdicionar.push({ matricula, nome });
                 }
             })
             .on('end', resolve)

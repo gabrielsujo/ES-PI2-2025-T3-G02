@@ -30,7 +30,7 @@ router.get('/instituicoes/:instituicao_id/disciplinas', authenticateToken, async
 
         for (const disciplina of disciplinas) {
             const turmasResults = await pool.query(
-                'SELECT * FROM turmas WHERE disciplinas_id = $1 ORDER BY nome'
+                'SELECT * FROM turmas WHERE disciplina_id = $1 ORDER BY nome',
                 [disciplina.id]
             );
             disciplina.turmas = turmasResults.rows;
@@ -57,7 +57,7 @@ router.post( '/disciplinas', authenticateToken, async (req: AuthRequest, res) =>
 
     try{
         const instituicaoCheck = await pool.query (
-            'SELECT id FROM instituicoes WHERE id = $1  AND usuarios_id = $2',
+            'SELECT id FROM instituicoes WHERE id = $1  AND usuario_id = $2',
             [instituicao_id, usuarioId]
         );
         if (instituicaoCheck.rows.length === 0) {
@@ -65,7 +65,7 @@ router.post( '/disciplinas', authenticateToken, async (req: AuthRequest, res) =>
         }
 
         const novaDiciplina = await pool.query(
-            'INSERT INTO disciplinas (nome, sigla, codigo, periodo, instituicao_id VALUE ($1, $2, $3, $4, $5) RETURNING *',
+            'INSERT INTO disciplinas (nome, sigla, codigo, periodo, instituicao_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
             [nome, sigla, codigo, periodo, instituicao_id]
         );
 
@@ -130,7 +130,7 @@ router.post('/turmas', authenticateToken, async (req: AuthRequest, res) =>{
         }
 
         const novaTurma = await pool.query(
-            'INSERT INTO turma (nome, dia_semana, horario, local, disciplina_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            'INSERT INTO turmas (nome, dia_semana, horario, local, disciplina_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [nome, dia, horario, local || null, disciplinaId]
         ); 
 

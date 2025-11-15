@@ -1,8 +1,8 @@
 export function generateFormula(
-    siglasComponentes: string[], 
-    tipoMedia: 'simples' | 'ponderada', 
-    pesos?: number[]
-): string {
+    siglasComponentes, 
+    tipoMedia, 
+    pesos 
+) {
     if (siglasComponentes.length === 0) {
         return '';
     }

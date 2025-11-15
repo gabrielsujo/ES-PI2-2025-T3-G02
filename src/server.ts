@@ -7,7 +7,7 @@ import path from 'path';
 //importar rotas e bancos
 import authRoutes from './routes/authRoutes';
 import instituicaoRoutes from './routes/instituicaoRoutes';
-import disciplinaRoutes from './routes/diciplinaRoutes';
+import disciplinaRoutes from './routes/disciplinasRoutes';
 import alunosRoutes from './routes/alunoRoutes';
 import componenteRoutes from './routes/componenteRoutes';
 import notaRoutes from './routes/notaRoutes';
@@ -33,6 +33,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, '..', 'src'))); 
 
 
 // ROTA PÚBLICA: Login e Registro

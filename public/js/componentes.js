@@ -1,6 +1,6 @@
-import { generateFormula } from '../src/utils/GerarFormula.ts';
+import { generateFormula } from '../../src/utils/GerarFormula.js';
 
-// --- ELEMENTOS DOM ---
+// ELEMENTOS DOM 
 const form = document.getElementById('form-formula-config');
 const numProvasInput = document.getElementById('num-provas');
 const tipoMediaSelect = document.getElementById('tipo-media');

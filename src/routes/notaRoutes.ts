@@ -28,9 +28,9 @@ router.get('/turmas/:turma_id/notas', authenticateToken, async (req: AuthRequest
         
         //buscar todas as notas associadas aos alunos desta turma
         const notasResult = await pool.query(
-            `SELECT n.aluno_id, n.componentes, n.valor
+            `SELECT n.aluno_id, n.componente_id, n.valor
             FROM notas n 
-            JOIN alunos a ON n.aluno_id = n.id
+            JOIN alunos a ON n.aluno_id = a.id
             WHERE a.turma_id = $1`,
             [turma_id]
         );
@@ -63,7 +63,7 @@ router.post('/turmas/:turma_id/notas', authenticateToken, async (req: AuthReques
             `SELECT t.id FROM turmas t
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE t.id = $1 i.usuario_id = $2`,
+            WHERE t.id = $1 AND i.usuario_id = $2`,
             [turma_id, usuarioId]
         );
         if(turmaCheck.rows.length === 0) {
@@ -84,9 +84,9 @@ router.post('/turmas/:turma_id/notas', authenticateToken, async (req: AuthReques
 
                 const query = `
                     INSERT INTO notas (aluno_id, componente_id, valor)
-                    VALUE ($1, $2, $3)
+                    VALUES ($1, $2, $3)
                     ON CONFLICT (aluno_id, componente_id) DO UPDATE
-                    SET valor = EXCLUDE.valor
+                    SET valor = EXCLUDED.valor
                 `;
                 //ON CONFLICT é o UPSERT 
                 //se o par aluno_id e componente_id ja existir ao inves de dar erro

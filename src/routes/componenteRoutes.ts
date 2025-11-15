@@ -16,7 +16,7 @@ router.get('/disciplinas/:disciplina_id/componentes', authenticateToken, async(r
     try {
         // verificar se a disciplina pertence ao utilizador
         const disciplinaCheck = await pool.query(
-            `SELECT d.id, d.formula_calculo FROM disciplina d
+            `SELECT d.id, d.formula_calculo FROM disciplinas d
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE d.id = $1 AND i.usuario_id = $2`,
             [disciplina_id, usuarioId]
@@ -57,7 +57,7 @@ router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
     try {
         //verificar se a disciplina pertence ao utilizador
         const disciplinaCheck = await pool.query(
-        `SELECT d.id FROM disciplina d
+        `SELECT d.id FROM disciplinas d
         JOIN instituicoes i ON d.instituicao_id = i.id
         WHERE d.id = $1 AND i.usuario_id = $2`,
         [disciplina_id, usuarioId]
@@ -68,7 +68,7 @@ router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
 
         //inserir o novo componente 
         const novoComponente = await pool.query(
-            'INSER INTO componentes (nome, sigla, descricao, disciplina_id) VALUES ($1, $2, $3, $4) RETURNING *', 
+            'INSERT INTO componentes (nome, sigla, descricao, disciplina_id) VALUES ($1, $2, $3, $4) RETURNING *', 
             [nome, sigla, desc || null, disciplina_id]
         );
 
@@ -80,7 +80,7 @@ router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
     }
 });
 
-router.put('/disciplinas/:disciplina_id/formula', authenticateToken, async (req: AuthRequest, res) => {
+router.put('/componentes/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const { nome, sigla, desc } = req.body;
     const usuarioId = req.userId;
@@ -98,7 +98,7 @@ router.put('/disciplinas/:disciplina_id/formula', authenticateToken, async (req:
         const check = await pool.query(
             `SELECT c.id FROM componentes c
             JOIN disciplinas d ON c.disciplina_id = d.id
-            JOIN insituicoes i ON d.instituicao_id = i.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE c.id = $1 AND i.usuario_id = $2`,
             [id, usuarioId]
         );
@@ -163,8 +163,8 @@ router.put('/disciplinas/:disciplina_id/formula', authenticateToken, async (req:
     try {
         // verificar se discplina pertence ao utilizador
         const disciplinaCheck = await pool.query(
-            `SELECT d.id FROM disciplina d
-            JOIN insituicoes i ON d.instituicao_id = i.id
+            `SELECT d.id FROM disciplinas d
+            JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE d.id = $1 AND i.usuario_id =$2`,
             [disciplina_id, usuarioId]
         );

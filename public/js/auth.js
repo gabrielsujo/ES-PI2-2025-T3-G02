@@ -1,4 +1,3 @@
-// Em: public/js/auth.js
 
 function registrarUsuario(event) {
     
@@ -48,3 +47,44 @@ function registrarUsuario(event) {
         alert('Falha na comunicação com o servidor. Tente novamente.');
     });
 }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    
+    const loginForm = document.getElementById('login-form');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email, senha: senha })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(data.message);
+                    
+                    localStorage.setItem('token', data.token); 
+                    
+                    window.location.href = 'dashboard.html'; 
+                } else {
+                    alert(`Erro no login: ${data.error}`);
+                }
+
+            } catch (err) {
+                console.error('Erro de comunicação:', err);
+                alert('Falha na comunicação com o servidor. Tente novamente.');
+            }
+        });
+    }
+});

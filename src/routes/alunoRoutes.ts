@@ -73,9 +73,13 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         res.status(201).json(novoAluno.rows[0]);
     } catch(err){
         console.error(err);
-        if (err.code === '23505') { 
-            return res.status(409).json({ error: 'Matrícula já cadastrada.' });
+        
+        if (err && typeof err === 'object' && 'code' in err) {
+            if (err.code === '23505') { 
+                return res.status(409).json({ error: 'Matrícula já cadastrada.' });
+            }
         }
+
         res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 });
@@ -175,7 +179,6 @@ router.post(
             return res.status(403).json({ error: 'Ação não autorizada.' });
         }
 
-        // buscaar matricula existentes para não ter duplicatas
         const existentesResult = await pool.query(
             'SELECT matricula FROM alunos WHERE turma_id = $1',
             [turma_id]
@@ -184,7 +187,6 @@ router.post(
 
         const alunosParaAdicionar: { matricula: string, nome: string } [] = [];
 
-        //processar o buffer do arquivo csv
         const bufferStream = new Readable();
         bufferStream.push(req.file.buffer);
         bufferStream.push(null);
@@ -192,14 +194,13 @@ router.post(
         await new Promise<void>((resolve, reject) => {
             bufferStream
             .pipe(csvParser({
-                headers: ['matricula', 'nome'], // nome temporario
-                skipLines: 1 // pula a linha do cabeçalho 
+                headers: ['matricula', 'nome'],
+                skipLines: 1
             }))
             .on('data', (row) => {
                 const matricula = row.matricula?.trim();
                 const nome = row.nome?.trim();
                 
-                //validar e verificar duplicatas
                 if (matricula && nome && !matriculaExistentes.has(matricula)) {
                     matriculaExistentes.add(matricula);
                     alunosParaAdicionar.push({ matricula, nome });

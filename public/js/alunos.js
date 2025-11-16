@@ -8,9 +8,14 @@ document.addEventListener('DOMContentLoaded', () =>{
     const btnAddAluno = document.getElementById('add-aluno-btn');
     const btnImportCsv = document.getElementById('import-csv-btn');
 
+    // Referências para a Remoção em Lote
+    const btnRemoveSelecionados = document.getElementById('remove-selecionados-btn');
+    const selectAllCheckbox = document.getElementById('select-all-alunos');
+    const tabelaBody = document.getElementById('alunos-tabela-body'); 
+
     //formulários
     const formsCsv = document.getElementById('form-csv');
-    const formAluno = document.getElementById('form-aluno') // depois da adição da logica de salvar alunos
+    const formAluno = document.getElementById('form-aluno') 
 
     // ------ ABRIR E FECHAR OS MODAIS ------
 
@@ -99,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () =>{
         matriculaInput.focus();
     }
 
-    // Funçãoi para abrir o modal em modo "EDITAR"
+    // Função para abrir o modal em modo "EDITAR"
     function abrirModalParaEditar(id, matricula, nome) {
         modalAlunoTitle.textContent = 'Editar Aluno';
         submitBtnAluno.textContent = 'Atualizar Aluno';
@@ -112,6 +117,95 @@ document.addEventListener('DOMContentLoaded', () =>{
     
     btnAddAluno.addEventListener('click', abrirModalParaCriar);
 
+    // --- LÓGICA DE SELEÇÃO E REMOÇÃO MÚLTIPLA ---
+    
+    // Função para atualizar o estado do botão de remoção
+    function updateBatchDeleteButton() {
+        const checkboxes = tabelaBody.querySelectorAll('input[name="alunoSelecionado"]:checked');
+        btnRemoveSelecionados.disabled = checkboxes.length === 0;
+        btnRemoveSelecionados.textContent = `Remover Selecionados (${checkboxes.length})`;
+        
+        // Sincroniza o 'Selecionar Todos'
+        if (selectAllCheckbox) {
+            const allCheckboxes = tabelaBody.querySelectorAll('input[name="alunoSelecionado"]');
+            const allChecked = allCheckboxes.length > 0 && checkboxes.length === allCheckboxes.length;
+            // Se o estado visual atual é diferente do calculado, atualiza
+            if(selectAllCheckbox.checked !== allChecked) {
+                 selectAllCheckbox.checked = allChecked; 
+            }
+        }
+    }
+    
+    // Listener para o checkbox 'Selecionar Todos'
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllCheckbox.checked;
+            tabelaBody.querySelectorAll('input[name="alunoSelecionado"]').forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateBatchDeleteButton();
+        });
+    }
+
+    // Listener para os checkboxes individuais (usa delegação para o body)
+    if (tabelaBody) {
+        tabelaBody.addEventListener('change', (e) => {
+            if (e.target.name === 'alunoSelecionado') {
+                updateBatchDeleteButton();
+            }
+        });
+        
+         // Chama no início
+         updateBatchDeleteButton(); 
+    }
+
+    // Listener para o botão de remoção múltipla
+    if (btnRemoveSelecionados) {
+        btnRemoveSelecionados.addEventListener('click', async () => {
+            const checkboxes = tabelaBody.querySelectorAll('input[name="alunoSelecionado"]:checked');
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const token = localStorage.getItem('token');
+
+            if (ids.length === 0) {
+                alert('Nenhum aluno selecionado.');
+                return;
+            }
+
+            const confirmacao = window.confirm(`Tem certeza que deseja remover ${ids.length} aluno(s)? Esta ação é irrevogável.`);
+
+            if (!confirmacao) return;
+
+            btnRemoveSelecionados.disabled = true;
+            btnRemoveSelecionados.textContent = 'Removendo...';
+
+            try {
+                const response = await fetch('/api/alunos/batch', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ ids })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    window.location.reload(); 
+                } else {
+                    alert(`Erro na remoção em lote: ${result.error || 'Não foi possível remover. Verifique se os alunos possuem notas associadas.'}`);
+                }
+            } catch (err) {
+                console.error('Erro de comunicação:', err);
+                alert('Falha ao se comunicar com o servidor para remover os alunos.');
+            } finally {
+                btnRemoveSelecionados.disabled = false;
+                updateBatchDeleteButton(); 
+            }
+        });
+    }
+
     //Listener para o clique nos botões "Editar" na tabela 
     //(O 'tabelaBody' já foi pego na lógica de remoção múltipla)
     tabelaBody.addEventListener('click', (e) => {
@@ -123,15 +217,15 @@ document.addEventListener('DOMContentLoaded', () =>{
         const tr = editButton.closest('tr');
         //pegar o ID do botão "Remover" na mesma linha
         const id = tr.querySelector('.btn-excluir')?.dataset.id;
-        const matricula = tr.querySelector('[data-fiel="matricula"]')?.textContent;
-        const nome = tr.querySelector('[data-fiel="nome"]')?.textContent;
+        const matricula = tr.querySelector('[data-field="matricula"]')?.textContent;
+        const nome = tr.querySelector('[data-field="nome"]')?.textContent;
 
         if (id && matricula && nome) {
-            abrirModalParaCriar(id, matricula.trim(), nome.trim());
+            abrirModalParaEditar(id, matricula.trim(), nome.trim());
         } else {
             // tentar pegar op ID do checkbox se o botão excluir não estiver la
-            const checkbox = tr.querySelector('input[nome="alunoSelecionado"]');
-            if (checkbox && chackbox.value && matricula && nome) {
+            const checkbox = tr.querySelector('input[name="alunoSelecionado"]');
+            if (checkbox && checkbox.value && matricula && nome) {
                 abrirModalParaEditar(checkbox.value, matricula.trim(), nome.trim());
             } else {
                 alert('Erro: Não foi possível carregar os dados para edição.');
@@ -140,13 +234,13 @@ document.addEventListener('DOMContentLoaded', () =>{
     });
 
     //Listener para o SUBMIT do formalário (Criar ou Editar)
-    //(O 'formAluno' foi pego no topo do seu arquivo)
     formAluno.addEventListener('submit', async(e) => {
         e.preventDefault();
 
         const id = hiddenAlunoId.value;
         const matricula = matriculaInput.value.trim();
         const nome = nomeInput.value.trim();
+        const token = localStorage.getItem('token'); // Pega o token para a requisição
 
         if(!matricula || !nome) {
             alert('Matrícula e Nome são obrigatórios.');
@@ -154,12 +248,14 @@ document.addEventListener('DOMContentLoaded', () =>{
         }
 
         const isEditMode = id !== '';
-        const url = isEditMode ? 'PUT' : 'POST';
+        //  Define a URL e o método corretos
+        const url = isEditMode ? `/api/alunos/${id}` : '/api/alunos';
+        const method = isEditMode ? 'PUT' : 'POST';
 
         const body = {
             matricula: matricula,
             nome: nome,
-            turma_id: turmaId //  turmaId que pega no URL
+            turma_id: turmaId // turmaId que pega no URL
         };
 
         submitBtnAluno.disabled = true;

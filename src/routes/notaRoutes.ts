@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import pool from '../config/db';
 import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
+import Papa from 'papaparse';
+import { calcularNotaFinal } from '../utils/CalculoNotas.js'
 
 const router = Router();
 
@@ -106,6 +108,120 @@ router.post('/turmas/:turma_id/notas', authenticateToken, async (req: AuthReques
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRequest, res) => {
+    const { turma_id } = req.params;
+    const usuarioId = req.userId;
+
+    try {
+        //verificar permissão e buscar dados da turma/disciplina
+        const turmaCheck = await pool.query(
+            `SELECT 
+                t.nome as turma_nome,
+                d.id as disciplina_id,
+                d.formula_calculo,
+                d.sigla as disciplina_sigla
+            FROM disciplinas d ON t.disciplina_id = d.id
+            JOIN disciplina d ON t.disciplina_id = i.id
+            WHERE t.id = $1 AND i.usuario_id = $2`,
+            [turma_id, usuarioId]
+        );
+
+        if (turmaCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Turma não encontrada ou não autorizada.'})
+        }
+        
+        const { disciplina_id, formula_calculo, disciplina_sigla, turma_nome } = turmaCheck.rows[0];
+
+        //buscar componentes, alunos e notas
+        const componentesResult = await pool.query(
+            'SELECT id, sigla FROM componentes WHERE disciplina_id = $1 ORDER BY sigla',
+            [disciplina_id]
+        );
+        const componentes = componentesResult.rows;
+
+        const alunosResult = await pool.query(
+            'SELECT id, matricula, nome FROM alunos WHERE turma_id = $1 ORDER BY nome',
+            [turma_id]
+        );
+        const alunos = alunosResult.rows;
+
+        if (alunos.length === 0 || componentes.length === 0) {
+            return res.status(400).json({ error: 'Não há alunos ou componentes cadastrados para exportar.' })
+        }
+
+        const notasResult = await pool.query(
+            `SELECT n.alunos_id, n.componentes_id, n.valor
+            From notas n
+            JOIN alnos a ON n.alunos_id = a.id
+            WHERE a.turma_id = $1`,
+            [turma_id]
+        );
+        
+        //mapeia as notas para facilitar acesso
+        const notasMap = new Map<number, Map<number, number>>();
+        notasResult.rows.forEach(n => {
+            if (!notasMap.has(n.aluno_id)) notasMap.set(n.aluno_id, new Map());
+            notasMap.get(n.aluno_id)!.set(n.componente_id, n.valor);
+        });
+
+        //validação - checar se todas as rotas existem
+        let todasNotasLancadas = true;
+        for (const aluno of alunos) {
+            for (const comp of componentes) {
+                const nota = notasMap.get(aluno.id)?.get(comp.id);
+                if (nota === null || nota === undefined) {
+                    todasNotasLancadas = false;
+                    break;
+                }
+            }
+            if (!todasNotasLancadas) break;
+        }
+        if (!todasNotasLancadas) {
+            return res.status(400).json({ error: 'A exportação só é permitida quando TODAS as notas de todos os alunos estiverem lançadas.'})
+        }
+
+        //montar os dados para CSV
+        const dataParaCsv: any[] = [];
+        const headers = ['Matricula', 'Nome'];
+        headers.push(...componentes.map(c => c.sigla)); // p1, p2, etc.
+        headers.push('Nota final');
+
+        for (const aluno of alunos) {
+            const linha: any = {
+                Matricula: aluno.matricula,
+                Nome: aluno.nome
+            };
+
+            const notasParaCalculo: { sigla: string, valor: number | null }[] = [];
+
+            componentes.forEach(comp => {
+                const valor = notasMap.get(aluno.id)?.get(comp.id) ?? null;
+                linha[comp.sigla] = valor;
+                notasParaCalculo.push({ sigla: comp.sigla, valor: valor });
+            });
+
+            const notaFinal = calcularNotaFinal(formula_calculo, notasParaCalculo);
+            linha['Nota Final'] = notaFinal;
+
+            dataParaCsv.push(linha);
+        }
+        
+        //Gerar o CSV e o nome do arquivo
+        const csvString = Papa.unparse(dataParaCsv, { columns: headers, delimiter: ";"});
+        const timestamp = new Date().toISOString().replace(/[-:.]/g,'').slice(0, 17);
+        const fileName = `${timestamp}-${turma_nome.replace(/ /g, '_')}-${disciplina_sigla}.csv`;
+
+        // Enviar o arquivo como resposta
+        res.setHeader('Content-type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attenchment; filename="${fileName}"`);
+        res.status(200).send(Buffer.from(csvString, 'utf-8'));
+
+    } catch (err){
+        console.error('Erro na exportação de CSV:', err);
+        res.status(500).json({ error: 'Erro interno do servidor ao gerar o CSV' });
     }
 });
 

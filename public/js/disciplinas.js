@@ -1,6 +1,7 @@
+
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. funções auxiliares
+    // --- 1. funções auxiliares ---
 
     function getToken() {
         return localStorage.getItem('token');
@@ -10,14 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return new URLSearchParams(window.location.search).get(param);
     }
 
-    // verifica se o usuário está logado
     if (!getToken()) {
         alert('Sessão expirada. Faça o login novamente.');
         window.location.href = 'login.html';
-        return; // para a execução
+        return; 
     }
 
-   
+    // --- 2. referências principais ---
     const institutionId = getUrlParam('instituicao_id');
     const listaDisciplinas = document.getElementById('disciplinas-lista');
 
@@ -25,13 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDisciplina = document.getElementById('modal-disciplina');
     const formDisciplina = document.getElementById('form-disciplina');
     const btnAddDisciplina = document.getElementById('add-disciplina-btn');
+    const tituloModalDisciplina = document.getElementById('modal-disciplina-title');
+    const btnSubmitDisciplina = formDisciplina.querySelector('button[type="submit"]');
 
     // modal de turma
     const modalTurma = document.getElementById('modal-turma');
     const formTurma = document.getElementById('form-turma');
-    const hiddenDisciplinaIdTurma = document.getElementById('turma-disciplina-id'); // input <hidden>
+    const hiddenDisciplinaIdTurma = document.getElementById('turma-disciplina-id');
+    const tituloModalTurma = document.getElementById('modal-turma-title');
+    const btnSubmitTurma = formTurma.querySelector('button[type="submit"]');
 
-    // validação: precisa do id da instituição
+    // variável para controlar se estamos criando ou editando
+    let modoEdicao = {
+        ativo: false,
+        tipo: null, // 'disciplina' ou 'turma'
+        id: null
+    };
+
     if (!institutionId) {
         alert('ID da Instituição não encontrado na URL. Retornando ao dashboard.');
         window.location.href = 'dashboard.html';
@@ -41,16 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 3. função principal: carregar disciplinas ---
 
     async function carregarDisciplinas() {
-        // limpa o conteúdo estático do html
         listaDisciplinas.innerHTML = ''; 
 
         try {
-            // monta os cabeçalhos para a requisição
-            const headers = {
-                'Authorization': `Bearer ${getToken()}`
-            };
-
-            // busca na api as disciplinas (e suas turmas)
+            const headers = { 'Authorization': `Bearer ${getToken()}` };
             const response = await fetch(`/api/instituicoes/${institutionId}/disciplinas`, { headers });
 
             if (!response.ok) {
@@ -60,13 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const disciplinas = await response.json();
 
-            // se não houver disciplinas exibe uma mensagem
             if (disciplinas.length === 0) {
                 listaDisciplinas.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nenhuma disciplina cadastrada.</p>';
                 return;
             }
 
-            // para cada disciplina, cria um card e adiciona na lista
             disciplinas.forEach(disciplina => {
                 const card = criarCardDisciplina(disciplina);
                 listaDisciplinas.appendChild(card);
@@ -78,21 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 4. funções de renderização (como criar o html) ---
+    // --- 4. funções de renderização (criação do html) ---
 
-    /**
-     * cria o html de um card de disciplina
-     */
     function criarCardDisciplina(disciplina) {
         const article = document.createElement('article');
         article.className = 'card disciplina-card';
         
-        // cria a lista de turmas (ou exibe a mensagem "nenhuma turma")
         const turmasHtml = disciplina.turmas.length > 0
-            ? disciplina.turmas.map(turma => criarItemTurma(turma, disciplina.id)).join('')
+            ? disciplina.turmas.map(turma => criarItemTurma(turma, disciplina.id, institutionId)).join('')
             : '<li style="padding: 0.5rem; color: var(--text-secondary);">Nenhuma turma cadastrada.</li>';
 
-        // preenche o html do card com os dados da disciplina
         article.innerHTML = `
             <div class="card-content">
                 <h3>${disciplina.nome}</h3>
@@ -107,23 +104,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn-danger-outline btn-excluir" data-id="${disciplina.id}" data-nome="${disciplina.nome}" data-tipo="disciplina">
                     Remover
                 </button>
-                <a href="./componentes.html?disciplina_id=${disciplina.id}" class="btn-secondary">Configurar componentes</a>
+                
+                <button class="btn-secondary btn-edit-disciplina" 
+                    data-id="${disciplina.id}" 
+                    data-nome="${disciplina.nome}" 
+                    data-sigla="${disciplina.sigla}" 
+                    data-codigo="${disciplina.codigo}" 
+                    data-periodo="${disciplina.periodo}">
+                    Editar
+                </button>
+
+                <a href="./componentes.html?disciplina_id=${disciplina.id}&instituicao_id=${institutionId}" class="btn-secondary">Configurar componentes</a>
             </div>
         `;
+        // ajusta o layout dos botões (flex)
+        article.querySelector('.card-actions-multi').style.justifyContent = 'space-between';
+        article.querySelector('.btn-excluir').style.flex = '1';
+        article.querySelector('.btn-edit-disciplina').style.flex = '1';
+        article.querySelector('.btn-secondary').style.flex = '2'; // dá mais espaço
+
         return article;
     }
 
-    /**
-     * cria o html de um item <li> de turma
-     */
-    function criarItemTurma(turma, disciplinaId) {
-        // correção importante: passa os ids para as páginas de alunos e notas
+    function criarItemTurma(turma, disciplinaId, institutionId) {
         return `
             <li class="turma-item">
                 <span>${turma.nome} - ${turma.dia_semana}, ${turma.horario}</span>
                 <div class="turma-actions">
-                    <a href="./alunos.html?turma_id=${turma.id}&disciplina_id=${disciplinaId}" class="btn-tertiary">Gerenciar Alunos</a>
-                    <a href="./notas.html?turma_id=${turma.id}&disciplina_id=${disciplinaId}" class="btn-tertiary">Lançar Notas</a>
+                    <button class="btn-tertiary btn-edit-turma"
+                        data-id="${turma.id}"
+                        data-nome="${turma.nome}"
+                        data-dia="${turma.dia_semana}"
+                        data-horario="${turma.horario}"
+                        data-local="${turma.local}"
+                        data-disciplina-id="${disciplinaId}">
+                        Editar
+                    </button>
+                    <a href="./alunos.html?turma_id=${turma.id}&disciplina_id=${disciplinaId}&instituicao_id=${institutionId}" class="btn-tertiary">Gerenciar Alunos</a>
+                    <a href="./notas.html?turma_id=${turma.id}&disciplina_id=${disciplinaId}&instituicao_id=${institutionId}" class="btn-tertiary">Lançar Notas</a>
                     <button class="btn-tertiary-danger btn-excluir" data-id="${turma.id}" data-nome="${turma.nome}" data-tipo="turma">
                         Remover
                     </button>
@@ -132,32 +150,60 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    
+    // --- 5. lógica dos modais ---
 
-    // --- modal "adicionar disciplina" ---
-    
-    // abrir o modal
+    /**
+     * reseta e fecha todos os modais, limpando o modo de edição
+     */
+    function fecharTodosModais() {
+        modalDisciplina.style.display = 'none';
+        modalTurma.style.display = 'none';
+        
+        // reseta o estado de edição
+        modoEdicao = { ativo: false, tipo: null, id: null };
+        
+        // reseta os formulários
+        formDisciplina.reset();
+        formTurma.reset();
+        
+        // reseta os títulos e botões para o padrão "adicionar"
+        tituloModalDisciplina.textContent = 'Adicionar Nova Disciplina';
+        btnSubmitDisciplina.textContent = 'Salvar Disciplina';
+        tituloModalTurma.textContent = 'Adicionar Nova Turma';
+        btnSubmitTurma.textContent = 'Salvar Turma';
+    }
+
+    // --- modal "adicionar disciplina" (abrir) ---
     btnAddDisciplina.addEventListener('click', () => {
-        formDisciplina.reset(); // limpa o formulário
+        fecharTodosModais(); // limpa tudo primeiro
+        // re-configura para "adicionar" (já feito no fecharTodosModais)
         modalDisciplina.style.display = 'flex';
     });
 
-    // salvar a disciplina
+    // --- modal "adicionar/editar disciplina" (salvar) ---
     formDisciplina.addEventListener('submit', async (e) => {
-        e.preventDefault(); // impede o recarregamento da página
+        e.preventDefault(); 
         
-        // pega os dados dos inputs do formulário
         const dados = {
             nome: document.getElementById('disciplina-nome').value,
             sigla: document.getElementById('disciplina-sigla').value,
             codigo: document.getElementById('disciplina-codigo').value,
             periodo: document.getElementById('disciplina-periodo').value,
-            instituicao_id: institutionId // adiciona o id da instituição
+            instituicao_id: institutionId // necessário para criar
         };
+        
+        let url = '/api/disciplinas';
+        let method = 'POST';
+
+        // se estiver editando, muda a url e o método
+        if (modoEdicao.ativo && modoEdicao.tipo === 'disciplina') {
+            url = `/api/disciplinas/${modoEdicao.id}`;
+            method = 'PUT';
+        }
 
         try {
-            const response = await fetch('/api/disciplinas', { 
-                method: 'POST',
+            const response = await fetch(url, { 
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${getToken()}`
@@ -170,77 +216,127 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(err.error || 'Não foi possível salvar');
             }
 
-            alert('Disciplina criada com sucesso!');
-            modalDisciplina.style.display = 'none'; // fecha o modal
-            carregarDisciplinas(); // recarrega a lista de disciplinas
+            alert(method === 'POST' ? 'Disciplina criada!' : 'Disciplina atualizada!');
+            fecharTodosModais();
+            carregarDisciplinas(); 
 
         } catch (err) {
             alert(`Erro ao salvar: ${err.message}`);
         }
     });
 
-    // --- modal "adicionar turma" ---
+    // --- modal "adicionar/editar turma" (salvar) ---
+    formTurma.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const dados = {
+            nome: document.getElementById('turma-nome').value,
+            dia: document.getElementById('turma-dia').value,
+            horario: document.getElementById('turma-horario').value,
+            local: document.getElementById('turma-local').value,
+            disciplinaId: hiddenDisciplinaIdTurma.value // pego do input hidden
+        };
+        
+        let url = '/api/turmas';
+        let method = 'POST';
+
+        // se estiver editando, muda a url e o método
+        if (modoEdicao.ativo && modoEdicao.tipo === 'turma') {
+            url = `/api/turmas/${modoEdicao.id}`;
+            method = 'PUT';
+        }
+        
+        try {
+            const response = await fetch(url, { 
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify(dados)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Não foi possível salvar');
+            }
+
+            alert(method === 'POST' ? 'Turma criada!' : 'Turma atualizada!');
+            fecharTodosModais();
+            carregarDisciplinas();
+
+        } catch (err) {
+            alert(`Erro ao salvar: ${err.message}`);
+        }
+    });
+
+
+    // --- 6. listeners de clique (delegação de evento) ---
     
-    // abrir o modal (usando "delegação de evento")
-    // como os botões "+ adicionar turma" são dinâmicos,
-    // ouvimos por cliques na 'listaDisciplinas' inteira.
     listaDisciplinas.addEventListener('click', (e) => {
-        // se o que foi clicado foi um botão com a classe 'btn-add-turma'
-        if (e.target.classList.contains('btn-add-turma')) {
-            const disciplinaId = e.target.dataset.disciplinaId;
-            formTurma.reset();
-            hiddenDisciplinaIdTurma.value = disciplinaId; // coloca o id no input hidden
+        const target = e.target;
+
+        // --- abrir modal "adicionar turma" ---
+        if (target.classList.contains('btn-add-turma')) {
+            fecharTodosModais(); // limpa tudo
+            const disciplinaId = target.dataset.disciplinaId;
+            hiddenDisciplinaIdTurma.value = disciplinaId; // define o id da disciplina
+            modalTurma.style.display = 'flex';
+        }
+
+        // --- abrir modal "editar disciplina" ---
+        if (target.classList.contains('btn-edit-disciplina')) {
+            fecharTodosModais(); // limpa tudo
+            const data = target.dataset;
+
+            // 1. define o estado de edição
+            modoEdicao.ativo = true;
+            modoEdicao.tipo = 'disciplina';
+            modoEdicao.id = data.id;
+
+            // 2. preenche o formulário
+            tituloModalDisciplina.textContent = 'Editar Disciplina';
+            btnSubmitDisciplina.textContent = 'Atualizar';
+            document.getElementById('disciplina-nome').value = data.nome;
+            document.getElementById('disciplina-sigla').value = data.sigla;
+            document.getElementById('disciplina-codigo').value = data.codigo;
+            document.getElementById('disciplina-periodo').value = data.periodo;
+            
+            // 3. abre o modal
+            modalDisciplina.style.display = 'flex';
+        }
+        
+        // --- abrir modal "editar turma" ---
+        if (target.classList.contains('btn-edit-turma')) {
+            fecharTodosModais(); // limpa tudo
+            const data = target.dataset;
+
+            // 1. define o estado de edição
+            modoEdicao.ativo = true;
+            modoEdicao.tipo = 'turma';
+            modoEdicao.id = data.id;
+
+            // 2. preenche o formulário
+            tituloModalTurma.textContent = 'Editar Turma';
+            btnSubmitTurma.textContent = 'Atualizar';
+            document.getElementById('turma-nome').value = data.nome;
+            document.getElementById('turma-dia').value = data.dia;
+            document.getElementById('turma-horario').value = data.horario;
+            document.getElementById('turma-local').value = data.local;
+            hiddenDisciplinaIdTurma.value = data.disciplinaId; // importante
+            
+            // 3. abre o modal
             modalTurma.style.display = 'flex';
         }
     });
 
-    // salvar a turma
-    formTurma.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // pega os dados dos inputs do formulário
-        const dados = {
-            nome: document.getElementById('turma-nome').value,
-            dia: document.getElementById('turma-dia').value, // o nome do input é 'dia'
-            horario: document.getElementById('turma-horario').value,
-            local: document.getElementById('turma-local').value,
-            disciplinaId: hiddenDisciplinaIdTurma.value // pega o id do input hidden
-        };
-        
-        try {
-            const response = await fetch('/api/turmas', { 
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}`
-                },
-                body: JSON.stringify(dados)
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Não foi possível salvar');
-            }
-
-            alert('Turma criada com sucesso!');
-            modalTurma.style.display = 'none'; // fecha o modal
-            carregarDisciplinas(); // recarrega a lista para mostrar a nova turma
-
-        } catch (err) {
-            alert(`Erro ao salvar: ${err.message}`);
-        }
-    });
-
-    // --- 6. lógica para fechar modais (genérico) ---
-    // adiciona o evento para todos os botões "x" e "cancelar"
+    // --- 7. lógica para fechar modais (botões x e cancelar) ---
     document.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // encontra o modal pai (o '.modal-overlay') e o esconde
-            e.target.closest('.modal-overlay').style.display = 'none';
+        btn.addEventListener('click', () => {
+            fecharTodosModais(); // reseta tudo ao fechar
         });
     });
 
-    // --- 7. início ---
-    // carrega as disciplinas assim que a página é aberta
+    // --- 8. início ---
     carregarDisciplinas();
 });

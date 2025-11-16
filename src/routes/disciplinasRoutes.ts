@@ -171,8 +171,6 @@ router.delete('/turmas/:id', authenticateToken, async(req: AuthRequest, res) => 
     }
 });
 
-export default router;
-
 router.put('/disciplinas/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const { nome, sigla, codigo, periodo } = req.body;
@@ -244,3 +242,4 @@ router.put('/turmas/:id', authenticateToken, async (req: AuthRequest, res) => {
         res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 });
+export default router;

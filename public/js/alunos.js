@@ -13,9 +13,11 @@ document.addEventListener('DOMContentLoaded', () =>{
     const formAluno = document.getElementById('form-aluno') // depois da adição da logica de salvar alunos
 
     // ------ ABRIR E FECHAR OS MODAIS ------
-
     //abrir modal de aluno
     btnAddAluno.addEventListener('click', () => {
+        modalAluno.style.display = 'flex';
+    });
+    btnImportCsv.addEventListener('click', () => {
         modalCsv.style.display = 'flex';
     });
 

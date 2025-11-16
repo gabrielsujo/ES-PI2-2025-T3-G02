@@ -14,6 +14,7 @@ const notasTableBody = document.getElementById('notas-tabela-body');
 const activeEditButtons = document.querySelector('.active-edit-buttons');
 const editingComponentLabel = document.getElementById('editing-component-label');
 const btnExportCsv = document.getElementById('export-csv-btn');
+
 // FUNÇÃO UTILITÁRIA PARA OBTER IDS DA URL 
 function getUrlParams() {
     const params = new URLSearchParams(window.location.search);
@@ -363,6 +364,7 @@ async function saveNotes() {
     }
 }
 
+
 async function exportarCSV() {
     const params = getUrlParams();
     const { turmaId } = params;
@@ -429,7 +431,7 @@ document.addEventListener('DOMContentLoaded', loadConfigAndRender);
 // Botões de controle.
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 document.getElementById('cancel-edit-btn').addEventListener('click', cancelEditMode);
-btnExportCsv.addEventListener('click', exportarCSV); // ⬅️ ADICIONADO: Liga o botão à função
+btnExportCsv.addEventListener('click', exportarCSV);
 
 // Pressionar ENTER salva.
 notasTableBody.addEventListener('keydown', (event) => {

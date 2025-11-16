@@ -364,7 +364,6 @@ async function saveNotes() {
     }
 }
 
-
 async function exportarCSV() {
     const params = getUrlParams();
     const { turmaId } = params;

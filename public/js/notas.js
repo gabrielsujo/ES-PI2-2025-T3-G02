@@ -1,4 +1,4 @@
-import { calcularNotaFinal } from '../src/utils/CalculoNotas.js'; // Atenção ao bug do .ts/.js que listámos antes
+import { calcularNotaFinal } from '../src/utils/CalculoNotas.js';
 
 // Variáveis Globais de Estado
 let CONFIG_DISCIPLINA = null;
@@ -13,8 +13,7 @@ const notasTableHeaderRow = document.getElementById('notas-table-header-row');
 const notasTableBody = document.getElementById('notas-tabela-body');
 const activeEditButtons = document.querySelector('.active-edit-buttons');
 const editingComponentLabel = document.getElementById('editing-component-label');
-const btnExportCsv = document.getElementById('export-csv-btn'); // ⬅️ ADICIONADO: Referência ao botão
-
+const btnExportCsv = document.getElementById('export-csv-btn');
 // FUNÇÃO UTILITÁRIA PARA OBTER IDS DA URL 
 function getUrlParams() {
     const params = new URLSearchParams(window.location.search);

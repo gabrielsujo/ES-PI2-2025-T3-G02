@@ -172,3 +172,75 @@ router.delete('/turmas/:id', authenticateToken, async(req: AuthRequest, res) => 
 });
 
 export default router;
+
+router.put('/disciplinas/:id', authenticateToken, async (req: AuthRequest, res) => {
+    const { id } = req.params;
+    const { nome, sigla, codigo, periodo } = req.body;
+    const usuarioId = req.userId;
+
+    if (!nome || !sigla || !codigo || !periodo) {
+        return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+    }
+
+    try {
+        // verifica se a disciplina pertence ao usuário
+        const check = await pool.query(
+            `SELECT d.id FROM disciplinas d 
+             JOIN instituicoes i ON d.instituicao_id = i.id 
+             WHERE d.id = $1 AND i.usuario_id = $2`,
+            [id, usuarioId]
+        );
+
+        if (check.rows.length === 0) {
+            return res.status(404).json({ error: 'Disciplina não encontrada ou não autorizada.' });
+        }
+
+        // atualiza no banco
+        const disciplinaAtualizada = await pool.query(
+            'UPDATE disciplinas SET nome = $1, sigla = $2, codigo = $3, periodo = $4 WHERE id = $5 RETURNING *',
+            [nome, sigla, codigo, periodo, id]
+        );
+
+        res.status(200).json(disciplinaAtualizada.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+});
+
+
+router.put('/turmas/:id', authenticateToken, async (req: AuthRequest, res) => {
+    const { id } = req.params;
+    const { nome, dia, horario, local } = req.body; 
+    const usuarioId = req.userId;
+
+    if (!nome || !dia || !horario || !local) {
+        return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+    }
+
+    try {
+        // verifica se a turma pertence ao usuário
+        const check = await pool.query(
+            `SELECT t.id FROM turmas t
+             JOIN disciplinas d ON t.disciplina_id = d.id
+             JOIN instituicoes i ON d.instituicao_id = i.id
+             WHERE t.id = $1 AND i.usuario_id = $2`,
+            [id, usuarioId]
+        );
+
+        if (check.rows.length === 0) {
+            return res.status(404).json({ error: 'Turma não encontrada ou não autorizada.' });
+        }
+
+        // atualiza no banco
+        const turmaAtualizada = await pool.query(
+            'UPDATE turmas SET nome = $1, dia_semana = $2, horario = $3, local = $4 WHERE id = $5 RETURNING *',
+            [nome, dia, horario, local, id]
+        );
+
+        res.status(200).json(turmaAtualizada.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+});

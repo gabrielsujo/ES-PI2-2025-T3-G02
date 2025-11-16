@@ -37,12 +37,25 @@ router.get('/instituicoes', async (req: AuthRequest, res) => {
     }
 
     try{
-        const instituicoes = await pool.query(
+        const instituicoesResult = await pool.query(
             'SELECT * FROM instituicoes WHERE usuario_id = $1 ORDER BY nome',
             [usuarioId]
         );
+        const instituicoes = instituicoesResult.rows;
 
-        res.status(200).json(instituicoes.rows)
+        
+        // para cada instituição, vamos contar suas disciplinas
+        for (const inst of instituicoes) {
+            const countResult = await pool.query(
+                'SELECT COUNT(*) FROM disciplinas WHERE instituicao_id = $1',
+                [inst.id]
+            );
+            // adiciona a contagem ao objeto
+            inst.totalDisciplinas = parseInt(countResult.rows[0].count, 10);
+        }
+
+
+        res.status(200).json(instituicoes); // agora envia as instituições com a contagem
     } catch (err) {
         console.error(err);
         res.status(500).json({error: 'Erro interno do servidor.'});

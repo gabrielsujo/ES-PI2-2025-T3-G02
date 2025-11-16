@@ -44,7 +44,8 @@ Siga os passos abaixo para executar o projeto localmente!
 --PostgreSQL 
 
 --git clone https://github.com/gabrielsujo/es-pi2-2025-t3-g02.git
-cd es-pi2-2025-t3-g02
+
+--cd es-pi2-2025-t3-g02
 
 
 
@@ -73,7 +74,7 @@ PORT=3000
 # SEGURANÇA (JSON WEB TOKEN)
 JWT_SECRET=coloqueaquiumafrasealeatoria
 
-# servico de email para recuperar a senha
+# Servico de email para recuperar a senha
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=seuemail@example.com

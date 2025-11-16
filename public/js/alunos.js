@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () =>{
     const urlParams = new URLSearchParams(window.location.search);
     const turmaId = urlParams.get('turma_id');
     
-    if (!turmaID) {
+    if (!turmaId) {
         console.warn('ID da turma não encontrado na URL. A importação e adição não funcionarão');
         btnImportCsv.disabled = true;
         btnAddAluno.disabled = true;
@@ -45,12 +45,12 @@ document.addEventListener('DOMContentLoaded', () =>{
         e.preventDefault();
 
         const fileInput = document.getElementById('csv-file');
-        if (!fileInput.file || fileInput.file.length === 0) {
+        if (!fileInput.files || fileInput.files.length === 0) {
             alert('Por favor, selecione um arquivo.');
             return;
         }
 
-        const formData = new formData();
+        const formData = new FormData();
         formData.append('csvFile', fileInput.files[0]);
 
         const token = localStorage.getItem('token');

@@ -390,3 +390,64 @@ notasTableBody.addEventListener('click', (event) => {
         }
     }
 });
+
+//função para forçar o download do arquivo
+function triggerDownloand(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download =filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+}
+
+document.getElementById('export-csv-btn').addEventListener('click', async () => {
+    const { turmaId } = getUrlParams();
+
+    if (!turmaId) {
+        alert('Erro: ID da Turma não encontrado.');
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('export-csv-btn');
+    btn.textContent = 'Gerando...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(`/api/turmas/${turmaId}/export-csv`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'export_nota.csv';
+            if (contentDisposition) {
+                //extrai o nome do arquivo do cabeçalho
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch && filenameMatch.length > 1) {
+                    filename = filenameMatch[1];
+                }
+            }
+            triggerDownloand(blob, filename);
+
+        }else {
+            //mostrar o erro do backend
+            const errorData = await response.json();
+            alert(`Erro ao exportar: ${errorData.error}`);
+        }
+        
+    } catch (err) {
+        console.error('Erro no fetch de exportação:', err);
+        alert('Erro de comunicação ao exportar.');
+    } finally {
+        btn.textContent = 'Exportar Notas (CSV)';
+        btn.disabled = false;
+    }
+})

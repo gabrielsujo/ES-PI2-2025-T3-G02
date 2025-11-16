@@ -34,7 +34,7 @@ Frontend: HTML5, CSS3, JavaScript
 Autenticação: JSON , bcrypt
 
 Configuração e Instalação
-Siga os passos abaixo para executar o projeto localmente!
+Siga os passos abaixo para executar o projeto localmente:
 
 
 

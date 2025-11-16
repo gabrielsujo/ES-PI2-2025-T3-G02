@@ -1,4 +1,4 @@
-import { calcularNotaFinal } from '../src/utils/CalculoNotas.ts'; 
+import { calcularNotaFinal } from '../src/utils/CalculoNotas.js';
 
 // Variáveis Globais de Estado
 let CONFIG_DISCIPLINA = null;
@@ -13,7 +13,7 @@ const notasTableHeaderRow = document.getElementById('notas-table-header-row');
 const notasTableBody = document.getElementById('notas-tabela-body');
 const activeEditButtons = document.querySelector('.active-edit-buttons');
 const editingComponentLabel = document.getElementById('editing-component-label');
-
+const btnExportCsv = document.getElementById('export-csv-btn');
 
 // FUNÇÃO UTILITÁRIA PARA OBTER IDS DA URL 
 function getUrlParams() {
@@ -364,6 +364,65 @@ async function saveNotes() {
     }
 }
 
+async function exportarCSV() {
+    const params = getUrlParams();
+    const { turmaId } = params;
+    const token = localStorage.getItem('token');
+
+    if (!turmaId || !token) {
+        alert('Erro: ID da turma ou token não encontrado.');
+        return;
+    }
+
+    btnExportCsv.textContent = 'A gerar...';
+    btnExportCsv.disabled = true;
+
+    try {
+        const response = await fetch(`/api/turmas/${turmaId}/export-csv`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            // Se o backend enviar um erro (ex: notas em falta), ele virá como JSON
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Falha ao gerar o CSV.');
+        }
+
+        // 1. Obter o nome do ficheiro do cabeçalho
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = 'notas.csv'; // Nome padrão
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        // 2. Obter os dados como um Blob (ficheiro binário)
+        const blob = await response.blob();
+
+        // 3. Criar um link em memória para o download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename; // Define o nome do ficheiro para o download
+
+        // 4. Adicionar, clicar e remover o link
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url); // Limpa a memória
+        document.body.removeChild(a);
+
+    } catch (err) {
+        console.error('Erro ao exportar CSV:', err);
+        alert(`Não foi possível exportar: ${err.message}`);
+    } finally {
+        btnExportCsv.textContent = 'Exportar Notas (CSV)';
+        btnExportCsv.disabled = false;
+    }
+}
+
 
 // Inicia tudo.
 document.addEventListener('DOMContentLoaded', loadConfigAndRender);
@@ -371,6 +430,7 @@ document.addEventListener('DOMContentLoaded', loadConfigAndRender);
 // Botões de controle.
 document.getElementById('save-notes-btn').addEventListener('click', saveNotes);
 document.getElementById('cancel-edit-btn').addEventListener('click', cancelEditMode);
+btnExportCsv.addEventListener('click', exportarCSV);
 
 // Pressionar ENTER salva.
 notasTableBody.addEventListener('keydown', (event) => {
@@ -390,64 +450,3 @@ notasTableBody.addEventListener('click', (event) => {
         }
     }
 });
-
-//função para forçar o download do arquivo
-function triggerDownloand(blob, filename) {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download =filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    a.remove();
-}
-
-document.getElementById('export-csv-btn').addEventListener('click', async () => {
-    const { turmaId } = getUrlParams();
-
-    if (!turmaId) {
-        alert('Erro: ID da Turma não encontrado.');
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-    const btn = document.getElementById('export-csv-btn');
-    btn.textContent = 'Gerando...';
-    btn.disabled = true;
-
-    try {
-        const response = await fetch(`/api/turmas/${turmaId}/export-csv`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.ok) {
-            const blob = await response.blob();
-
-            const contentDisposition = response.headers.get('content-disposition');
-            let filename = 'export_nota.csv';
-            if (contentDisposition) {
-                //extrai o nome do arquivo do cabeçalho
-                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (filenameMatch && filenameMatch.length > 1) {
-                    filename = filenameMatch[1];
-                }
-            }
-            triggerDownloand(blob, filename);
-
-        }else {
-            //mostrar o erro do backend
-            const errorData = await response.json();
-            alert(`Erro ao exportar: ${errorData.error}`);
-        }
-        
-    } catch (err) {
-        console.error('Erro no fetch de exportação:', err);
-        alert('Erro de comunicação ao exportar.');
-    } finally {
-        btn.textContent = 'Exportar Notas (CSV)';
-        btn.disabled = false;
-    }
-})

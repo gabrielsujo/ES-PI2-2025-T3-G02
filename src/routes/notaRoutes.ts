@@ -2,7 +2,7 @@ import { Router } from 'express';
 import pool from '../config/db';
 import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 import Papa from 'papaparse';
-import { calcularNotaFinal } from '../utils/CalculoNotas.js'
+import { calcularNotaFinal } from '../utils/CalculoNotas.js' // backend importa .js
 
 const router = Router();
 
@@ -90,9 +90,7 @@ router.post('/turmas/:turma_id/notas', authenticateToken, async (req: AuthReques
                     ON CONFLICT (aluno_id, componente_id) DO UPDATE
                     SET valor = EXCLUDED.valor
                 `;
-                //ON CONFLICT é o UPSERT 
-                //se o par aluno_id e componente_id ja existir ao inves de dar erro
-                // vai executar um UPDATE definindo um 'valor' para o novo 'valor' que foi excluido da tentativa de INSERT
+                
                 await client.query(query, [nota.aluno_id, nota.componente_id, valorFinal]);
             } 
 
@@ -123,7 +121,7 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
                 d.id as disciplina_id,
                 d.formula_calculo,
                 d.sigla as disciplina_sigla
-            FROM turmas 
+            FROM turmas t 
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 AND i.usuario_id = $2`,
@@ -149,20 +147,26 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
         );
         const alunos = alunosResult.rows;
 
-        if (alunos.length === 0 || componentes.length === 0) {
-            return res.status(400).json({ error: 'Não há alunos ou componentes cadastrados para exportar.' })
+        if (alunos.length === 0) {
+             return res.status(400).json({ error: 'Não há alunos cadastrados para exportar.' })
+        }
+        if (componentes.length === 0) {
+             return res.status(400).json({ error: 'Não há componentes cadastrados para exportar.' })
         }
 
+        // --- início da correção ---
+        // busca notas. o erro estava em 'n.alunos_id'
         const notasResult = await pool.query(
             `SELECT n.aluno_id, n.componente_id, n.valor
-            From notas n
-            JOIN alunos a ON n.alunos_id = a.id
+            FROM notas n
+            JOIN alunos a ON n.aluno_id = a.id
             WHERE a.turma_id = $1`,
             [turma_id]
         );
+        // --- fim da correção ---
         
         //mapeia as notas para facilitar acesso
-        const notasMap = new Map<number, Map<number, number>>();
+        const notasMap = new Map<number, Map<number, number | null>>();
         notasResult.rows.forEach(n => {
             if (!notasMap.has(n.aluno_id)) notasMap.set(n.aluno_id, new Map());
             notasMap.get(n.aluno_id)!.set(n.componente_id, n.valor);
@@ -200,24 +204,25 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
 
             componentes.forEach(comp => {
                 const valor = notasMap.get(aluno.id)?.get(comp.id) ?? null;
-                linha[comp.sigla] = valor;
+                // formata '10.00' para '10,00' (padrão excel br)
+                linha[comp.sigla] = valor !== null ? valor.toFixed(2).replace('.', ',') : 'N/A';
                 notasParaCalculo.push({ sigla: comp.sigla, valor: valor });
             });
 
             const notaFinal = calcularNotaFinal(formula_calculo, notasParaCalculo);
-            linha['Nota Final'] = notaFinal;
+            linha['Nota final'] = notaFinal !== null ? notaFinal.toFixed(2).replace('.', ',') : 'N/A';
 
             dataParaCsv.push(linha);
         }
         
-        //Gerar o CSV e o nome do arquivo
+        //gerar o CSV e o nome do arquivo
         const csvString = Papa.unparse(dataParaCsv, { columns: headers, delimiter: ";"});
-        const timestamp = new Date().toISOString().replace(/[-:.]/g,'').slice(0, 17);
-        const fileName = `${timestamp}-${turma_nome.replace(/ /g, '_')}-${disciplina_sigla}.csv`;
+        const timestamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0, 19);
+        const fileName = `export_${turma_nome.replace(/ /g, '_')}_${timestamp}.csv`;
 
-        // Enviar o arquivo como resposta
+        // enviar o arquivo como resposta
         res.setHeader('Content-type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attenchment; filename="${fileName}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.status(200).send(Buffer.from(csvString, 'utf-8'));
 
     } catch (err){

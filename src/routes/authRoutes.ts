@@ -3,7 +3,7 @@ import pool from '../config/db';
 import bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { error } from "console";
-import { sendEmail } from '../utils/emailService';
+import { sendEmail } from './emailService';
 
 const router = Router();
 

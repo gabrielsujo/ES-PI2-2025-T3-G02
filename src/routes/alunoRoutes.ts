@@ -156,7 +156,7 @@ router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => 
 });
 
 router.post(
-    '/turmas/:turma_id/alunos/importar-csv',
+    '/turmas/:turma_id/alunos/import_csv',
     authenticateToken,
     upload.single('csvFile'),
     async (req: AuthRequest, res) => {
@@ -237,6 +237,69 @@ router.post(
     } catch(err) {
         console.error('Erro na importação de CSV', err);
         res.status(500).json({ error: 'Erro interno de servidor ao processar o CSV' });
+    }
+});
+
+//Rota: deletar multiplos alunos
+router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
+    const { ids } = req.body; // esperando um array
+    const usuarioId = req.userId;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'Array de IDs inválido ou vazio.' });
+    }
+
+    //garante que todos os IDs são mumeros inteiros
+    const alunosIds = ids.map(id => parseInt(id,10)).filter(id => !isNaN(id));
+
+    if (alunosIds.length === 0) {
+        return res.status(400).json({ error: 'Nenhum ID de aluno válido fornecido.' });
+    }
+
+    const client = await pool.connect();
+    try{
+        await client.query('BEGIN');
+        
+        //verificar permissão:
+        //garante que TODOS os IDs de alunos que o usuario está tentando apagar
+        // realmente pertencem a ele.
+        const checkQuery = await client.query(
+            `SELECT a.id FROM alunos a
+            JOIN turmas t ON a.turma_id = t.id
+            JOIN disciplinas d ON t.disciplina_id = d.id
+            JOIN instituicoes i ON d.insituicao_id = i.id
+            WHERE i.usuario_id = $1 AND a.id = ANY($2::int[])`,
+            [usuarioId, alunosIds]
+        );
+
+        // Compara o numero de IDs que o usuario pediu para apagar
+        // com o numero de IDs que ele realmente tem permissão para apagar
+        if (checkQuery.rows.length !== alunosIds.length) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Acão não autorizada. Alguns alunos não pertencem a este usúario ou não foram encontrados.' });
+        }
+
+        //apagar
+        //se a verificação passou. apaga todos os alunos de uma vez
+        await client.query(
+            'DELETE FROM alunos WHERE id = ANY($1::int[])',
+            [alunosIds]
+        );
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: `${alunosIds.length} alunos removidos com sucesso.` });
+
+    }catch (err){
+        await client.query('ROLLBACK');
+        console.error(err);
+
+        //trata oerro de dependêcia (ex: aluno com notas)
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
+            return res.status(400).json({ error: 'Não é possível remover. Verificar se os alunos possuem notas associadas.' });
+        }
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    } finally {
+        client.release();
     }
 });
 

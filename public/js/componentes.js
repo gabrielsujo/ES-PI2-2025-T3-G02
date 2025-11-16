@@ -168,50 +168,72 @@ pesosInputsContainer.addEventListener('input', (event) => {
 
 
 // Listener principal para o formulário de configuração
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) =>{
     event.preventDefault();
 
     const numProvas = parseInt(numProvasInput.value, 10);
     const tipoMedia = tipoMediaSelect.value;
-    const siglas = Array.from({ length: numProvas }, (_, i) => `${SIGLA_BASE}${i + 1}`);
+    const sigla = Array.from({ length: numProvas }, (_, i) => `${SIGLA_BASE}${i + 1}`);
 
     let pesos = [];
     if (tipoMedia === 'ponderada') {
         const pesoElements = document.querySelectorAll('.input-peso-componente');
-        // Converte NodeList para Array e mapeia os valores
         pesos = Array.from(pesoElements).map(input => parseInt(input.value, 10) || 0);
 
         const totalPesos = pesos.reduce((sum, current) => sum + current, 0);
         if (totalPesos <= 0) {
-             alert('Erro: A soma dos pesos deve ser maior que zero para Média Ponderada.');
-             return;
+            alert('Erro: A soma dos pesos deve ser maior que zero para Média Ponderada.');
+            return;
         }
     }
-    
-    // Chama a função GerarFormula para ter a fórmula final para salvar
+
     let formulaFinal;
     try {
-        formulaFinal = generateFormula(siglas, tipoMedia, pesos);
-    } catch (error) {
-         alert('Erro ao gerar fórmula: ' + error.message);
-         return;
+        formulaFinal = generateForumla(sigla, tipoMedia, pesos);
+    }catch (error) {
+        alert('Erro ao gerar fórmula: + error.message');
+        return;
     }
 
+    // obter disciplinaId da URL 
+    const urlParams = new URLSearchParams(window.location.search);
+    const disciplinaId = urlParams.get('disciplina_id');
+    const token = localStorage.getItem('token');
 
-    // 5. SALVA A CONFIGURAÇÃO NO LOCAL STORAGE
-    const configToSave = {
-        numProvas: numProvas,
-        tipoMedia: tipoMedia,
-        siglasComponentes: siglas,
-        pesos: pesos,
-        formula: formulaFinal
-    };
+    if (!disciplinaId || !token) {
+        alert('Erro: ID da disciplina ou token não encontrado para salvar.');
+        return;
+    }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(configToSave));
+    // chamar a API para salvar a fórmula
+    try {
+        const response = await fetch(`/api/disciplina/${disciplinaId}/formula`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ formula: formulaFinal })
+        });
 
-    alert('Configuração de fórmula e componentes salva com sucesso!');
-    console.log('Configuração salva:', configToSave);
-});
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || 'Falha ao salvar no backend');
+        }
 
+        // Salvar no localStorage (Apenas para recarregar a UI, opcional)
+        const configTosave = {
+            numProvas, tipoMedia, siglasComponentes: siglas, pesos, formula: formulaFinal
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(configTosave));
+
+        alert('Configuração de fórmula salva com sucesso no banco de dados!');
+        console.log('Configuração salva:', configTosave);
+
+    } catch (err) {
+        alert(`Erro ao salvar configuração: ${err.message}`);
+        console.error(err);
+    }
+})
 
 document.addEventListener('DOMContentLoaded', loadConfig);

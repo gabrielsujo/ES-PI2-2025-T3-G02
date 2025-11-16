@@ -123,8 +123,9 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
                 d.id as disciplina_id,
                 d.formula_calculo,
                 d.sigla as disciplina_sigla
-            FROM disciplinas d ON t.disciplina_id = d.id
-            JOIN disciplina d ON t.disciplina_id = i.id
+            FROM turmas 
+            JOIN disciplinas d ON t.disciplina_id = d.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 AND i.usuario_id = $2`,
             [turma_id, usuarioId]
         );
@@ -153,9 +154,9 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
         }
 
         const notasResult = await pool.query(
-            `SELECT n.alunos_id, n.componentes_id, n.valor
+            `SELECT n.aluno_id, n.componente_id, n.valor
             From notas n
-            JOIN alnos a ON n.alunos_id = a.id
+            JOIN alunos a ON n.alunos_id = a.id
             WHERE a.turma_id = $1`,
             [turma_id]
         );

@@ -1,72 +1,56 @@
-// Em: public/js/dashboard.js
-
 document.addEventListener('DOMContentLoaded', () => {
+    // --- REFERÊNCIAS DO DOM ---
     const token = localStorage.getItem('token');
-    // Se não houver token, redireciona para o login
     if (!token) {
-        window.location.href = '/login.html'; 
+        window.location.href = 'login.html';
         return;
     }
 
-    // --- Elementos do DOM ---
-    const lista = document.getElementById('instituicoes-lista');
-    const msgVazia = document.getElementById('empty-state-msg');
-    const btnAdd = document.getElementById('add-instituicao-btn');
     const modal = document.getElementById('modal-instituicao');
+    const modalTitle = document.getElementById('modal-instituicao-title');
     const form = document.getElementById('form-instituicao');
-    const inputNome = document.getElementById('instituicao-nome');
+    const hiddenIdInput = document.getElementById('instituicao-id-hidden'); // ⬅️ Referência para o input hidden
+    const nomeInput = document.getElementById('instituicao-nome');
+    const submitButton = document.getElementById('modal-instituicao-submit');
+    
+    const btnAdd = document.getElementById('add-instituicao-btn');
     const btnLogout = document.getElementById('logout-button');
+    const listaInstituicoes = document.getElementById('instituicoes-lista');
+    const emptyMsg = document.getElementById('empty-state-msg');
+    
+    // --- CABEÇALHOS GLOBAIS DA API ---
+    const apiHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
 
-    // --- 1. Carregar Instituições (GET) ---
+    // --- FUNÇÕES ---
+
+    /**
+     * READ (GET): Busca instituições na API e as renderiza
+     */
     async function carregarInstituicoes() {
-        try {
-            // Usa a URL relativa (correto, pois está no mesmo servidor)
-            const response = await fetch('/api/instituicoes', {
-                method: 'GET',
-                headers: { 
-                    'Authorization': `Bearer ${token}` 
-                }
-            });
+        listaInstituicoes.innerHTML = ''; 
+        emptyMsg.style.display = 'none';
 
-            // Se o token for inválido/expirado, o backend retorna 401
+        try {
+            const response = await fetch('/api/instituicoes', { headers: apiHeaders });
+
             if (response.status === 401 || response.status === 403) { 
                 alert('Sua sessão expirou. Faça o login novamente.');
                 localStorage.removeItem('token');
-                window.location.href = '/login.html'; 
+                window.location.href = 'login.html'; 
                 return;
             }
 
             const instituicoes = await response.json();
-            lista.innerHTML = ''; // Limpa os cards de exemplo
 
             if (instituicoes.length === 0) {
-                msgVazia.style.display = 'block';
+                emptyMsg.style.display = 'block';
             } else {
-                msgVazia.style.display = 'none';
-                // Renderiza (desenha) os cards
                 instituicoes.forEach(inst => {
-                    const card = document.createElement('article');
-                    card.className = 'card';
-                    
-                    // (O backend de disciplinas.html vai preencher o card-subtitle)
-                    card.innerHTML = `
-                        <div class="card-content">
-                            <h3>${inst.nome}</h3>
-                            <p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p> 
-                        </div>
-                        <div class="card-actions card-actions-multi">
-                            <button class="btn-danger-outline btn-excluir" 
-                                    data-id="${inst.id}" 
-                                    data-nome="${inst.nome}" 
-                                    data-tipo="instituicao">
-                                Remover
-                            </button>
-                            <a href="/disciplinas.html?instituicao_id=${inst.id}" class="btn-secondary">
-                                Gerenciar Disciplinas
-                            </a>
-                        </div>
-                    `;
-                    lista.appendChild(card);
+                    const card = criarCardInstituicao(inst);
+                    listaInstituicoes.appendChild(card);
                 });
             }
         } catch (err) {
@@ -75,61 +59,134 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 2. Adicionar Instituição (POST) ---
-    
-    // Abrir o modal
-    btnAdd.addEventListener('click', () => {
-        modal.style.display = 'flex';
-    });
+    /**
+     * Helper: Cria o HTML do Card
+     */
+    function criarCardInstituicao(inst) {
+        const article = document.createElement('article');
+        article.className = 'card';
+        
+        article.innerHTML = `
+            <div class="card-content">
+                <h3>${inst.nome}</h3>
+                <p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p> 
+            </div>
+            <div class="card-actions card-actions-multi">
+                <button class="btn-danger-outline btn-excluir" 
+                        data-id="${inst.id}" 
+                        data-nome="${inst.nome}" 
+                        data-tipo="instituicao">
+                    Remover
+                </button>
+                
+                <button class="btn-secondary btn-editar" data-id="${inst.id}" data-nome="${inst.nome}">
+                    Editar
+                </button>
+                
+                <a href="/disciplinas.html?instituicao_id=${inst.id}" class="btn-secondary">
+                    Gerenciar Disciplinas
+                </a>
+            </div>
+        `;
+        return article;
+    }
 
-    // Enviar o formulário
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = inputNome.value.trim();
-        if (!nome) return;
+    // --- Funções de Abrir/Fechar Modal ---
+
+    function abrirModalParaCriar() {
+        modalTitle.textContent = 'Adicionar Nova Instituição';
+        hiddenIdInput.value = ''; // Limpa o ID
+        nomeInput.value = ''; // Limpa o nome
+        submitButton.textContent = 'Salvar Instituição';
+        modal.style.display = 'flex';
+        nomeInput.focus();
+    }
+
+    // --- ADICIONADO PARA EDITAR ---
+    // Preenche o modal com os dados existentes
+    function abrirModalParaEditar(id, nome) {
+        modalTitle.textContent = 'Editar Instituição';
+        hiddenIdInput.value = id; // Define o ID para o modo de edição
+        nomeInput.value = nome; // Preenche o nome atual
+        submitButton.textContent = 'Atualizar';
+        modal.style.display = 'flex';
+        nomeInput.focus();
+    }
+
+    function fecharModal() {
+        modal.style.display = 'none';
+        form.reset(); // Limpa o formulário ao fechar
+        hiddenIdInput.value = ''; // Garante que o ID foi limpo
+    }
+
+    /**
+     * CREATE (POST) / UPDATE (PUT): Salva ou Edita
+     */
+    // --- ATUALIZADO PARA EDITAR ---
+    async function salvarInstituicao(event) {
+        event.preventDefault();
+        const nome = nomeInput.value.trim();
+        const id = hiddenIdInput.value; // Pega o ID (estará vazio se for "Criar")
+        
+        if (!nome) {
+            alert('O nome é obrigatório.');
+            return;
+        }
+
+        // Verifica se é modo de Edição (se tem ID)
+        const isEditMode = id !== '';
+        const url = isEditMode ? `/api/instituicoes/${id}` : '/api/instituicoes';
+        const method = isEditMode ? 'PUT' : 'POST';
 
         try {
-            const response = await fetch('/api/instituicoes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+            const response = await fetch(url, {
+                method: method,
+                headers: apiHeaders,
                 body: JSON.stringify({ nome: nome })
             });
 
+            const result = await response.json();
+
             if (response.ok) {
-                form.reset();
-                modal.style.display = 'none';
+                alert(isEditMode ? 'Instituição atualizada!' : 'Instituição criada!');
+                fecharModal();
                 carregarInstituicoes(); // Recarrega a lista
             } else {
-                const err = await response.json();
-                alert(`Erro ao salvar: ${err.error || 'Erro desconhecido'}`);
+                alert(`Erro: ${result.error || 'Não foi possível salvar.'}`);
             }
         } catch (err) {
-            console.error('Falha na comunicação ao salvar:', err);
-            alert('Falha na comunicação ao salvar.');
+            console.error('Erro ao salvar:', err);
+            alert('Falha na comunicação com o servidor.');
         }
-    });
+    }
 
-    // --- 3. Fechar Modal (X ou Cancelar) ---
-    modal.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal-overlay') || 
-            e.target.classList.contains('btn-cancel') || 
-            e.target.classList.contains('modal-close-btn')) {
-            
-            modal.style.display = 'none';
-            form.reset();
-        }
-    });
 
-    // --- 4. Logout ---
-    btnLogout.addEventListener('click', () => {
-        localStorage.removeItem('token');
-        window.location.href = '/login.html';
-    });
-
-    // --- Iniciar ---
+    // --- EVENT LISTENERS ---
+    
     carregarInstituicoes();
 
+    btnAdd.addEventListener('click', abrirModalParaCriar);
+
+    btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+    });
+
+    modal.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
+        btn.addEventListener('click', fecharModal);
+    });
+
+    form.addEventListener('submit', salvarInstituicao);
+
+    // --- ADICIONADO PARA EDITAR ---
+    // Listener para os botões "Editar" (usa delegação de eventos na lista)
+    listaInstituicoes.addEventListener('click', (e) => {
+        // Verifica se o clique foi num botão de editar
+        const editButton = e.target.closest('.btn-editar');
+        if (editButton) {
+            const id = editButton.dataset.id;
+            const nome = editButton.dataset.nome;
+            abrirModalParaEditar(id, nome);
+        }
+    });
 });

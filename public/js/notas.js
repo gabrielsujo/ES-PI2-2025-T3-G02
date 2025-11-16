@@ -1,30 +1,13 @@
 import { calcularNotaFinal } from '../src/utils/CalculoNotas.ts'; 
 
-const STORAGE_KEY = 'disciplinaConfig'; 
+// Variáveis Globais de Estado
+let CONFIG_DISCIPLINA = null;
+let ESTADO_EDICAO_ATIVO = false;
+let COMPONENTE_EDITANDO = null;
+let COMPONENTES_MAP = new Map(); // Mapa: Sigla -> Componente ID (do DB)
+let ALUNOS_NOTAS_REAIS = []; // Array que armazena os dados reais combinados de Aluno + Notas
 
-// Simulação dos dados dos alunos.
-const SIMULACAO_ALUNOS_NOTAS = [
-    { 
-        id: 100, 
-        matricula: '100', 
-        nome: 'Pessoa 1', 
-        notas: [{ sigla: 'P1', valor: 10.00 }, { sigla: 'P2', valor: 8.50 }] 
-    },
-    { 
-        id: 101, 
-        matricula: '101', 
-        nome: 'Pessoa 2', 
-        notas: [{ sigla: 'P1', valor: 5.00 }, { sigla: 'P2', valor: 7.00 }] 
-    },
-    { 
-        id: 102, 
-        matricula: '102', 
-        nome: 'Pessoa 3', 
-        notas: [{ sigla: 'P1', valor: null }, { sigla: 'P2', valor: null }] // Notas pendentes
-    },
-];
-
-
+// Elementos DOM
 const dynamicEditButtonsContainer = document.getElementById('dynamic-edit-buttons');
 const notasTableHeaderRow = document.getElementById('notas-table-header-row');
 const notasTableBody = document.getElementById('notas-tabela-body');
@@ -32,24 +15,115 @@ const activeEditButtons = document.querySelector('.active-edit-buttons');
 const editingComponentLabel = document.getElementById('editing-component-label');
 
 
-let CONFIG_DISCIPLINA = null;
-let ESTADO_EDICAO_ATIVO = false;
-let COMPONENTE_EDITANDO = null;
+// FUNÇÃO UTILITÁRIA PARA OBTER IDS DA URL 
+function getUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        turmaId: params.get('turma_id'),
+        disciplinaId: params.get('disciplina_id')
+    };
+}
 
 
-// Inicia carregando a config salva e desenhando a tabela.
-function loadConfigAndRender() {
-    const savedConfig = JSON.parse(localStorage.getItem(STORAGE_KEY));
+function mergeStudentNotes(alunos, notas, siglas) {
+    // Organiza as notas por aluno_id
+    const notasPorAluno = new Map();
+    notas.forEach(nota => {
+        if (!notasPorAluno.has(nota.aluno_id)) {
+            notasPorAluno.set(nota.aluno_id, []);
+        }
+        // Encontra a sigla correspondente ao componente_id usando o mapa global
+        let sigla;
+        for (const [s, id] of COMPONENTES_MAP.entries()) {
+            if (id === nota.componente_id) {
+                sigla = s;
+                break;
+            }
+        }
+        if (sigla) {
+            notasPorAluno.get(nota.aluno_id).push({ sigla, valor: nota.valor });
+        }
+    });
 
-    if (!savedConfig || savedConfig.siglasComponentes.length === 0) {
-        alert('Erro: Nenhuma configuração encontrada. Configure primeiro.');
+    return alunos.map(aluno => {
+        const alunoNotas = notasPorAluno.get(aluno.id) || [];
+        
+        // Garante que o aluno tem notas para todos os componentes esperados (preenche com null se não tiver)
+        const notasCompletas = siglas.map(sigla => {
+            const notaExistente = alunoNotas.find(n => n.sigla === sigla);
+            // O valor vindo do DB é string ou null, converte para float se não for null
+            const valor = (notaExistente && notaExistente.valor !== null) ? parseFloat(notaExistente.valor) : null;
+            return { sigla, valor };
+        });
+        
+        return {
+            id: aluno.id,
+            matricula: aluno.matricula,
+            nome: aluno.nome,
+            notas: notasCompletas
+        };
+    });
+}
+
+// FUNÇÃO PRINCIPAL: CARREGAR DADOS DA API 
+async function loadConfigAndRender() {
+    const params = getUrlParams();
+    const { turmaId, disciplinaId } = params;
+    const token = localStorage.getItem('token');
+    
+    if (!disciplinaId || !turmaId || !token) {
+        alert('Erro de navegação: IDs da turma/disciplina ou token de acesso faltando. Verifique o URL.');
         return;
     }
-    
-    CONFIG_DISCIPLINA = savedConfig;
-    
-    renderEditButtons(CONFIG_DISCIPLINA.siglasComponentes);
-    renderTable(CONFIG_DISCIPLINA.siglasComponentes, CONFIG_DISCIPLINA.formula);
+
+    try {
+        // Fetch Components and Formula
+        const compResponse = await fetch(`/api/disciplinas/${disciplinaId}/componentes`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!compResponse.ok) {
+            const errorData = await compResponse.json();
+            alert(`Erro (Componentes): ${errorData.error || compResponse.statusText}. Por favor, configure os componentes da disciplina.`);
+            return;
+        }
+
+        const { componentes, formula } = await compResponse.json();
+        const siglasComponentes = componentes.map(c => c.sigla);
+            
+        CONFIG_DISCIPLINA = {
+            siglasComponentes: siglasComponentes,
+            formula: formula || '', // Deve ser string vazia se não houver fórmula
+        };
+
+        componentes.forEach(c => {
+            COMPONENTES_MAP.set(c.sigla, c.id); // Mapeia a sigla (P1, P2) para o ID real do banco
+        });
+        
+        //Fetch Students and Notes 
+        const [alunosResponse, notasResponse] = await Promise.all([
+            fetch(`/api/turmas/${turmaId}/alunos`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`/api/turmas/${turmaId}/notas`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        
+        if (!alunosResponse.ok || !notasResponse.ok) {
+             alert('Erro ao carregar alunos e/ou notas. Verifique a autorização.');
+             return;
+        }
+
+        const alunos = await alunosResponse.json();
+        const notas = await notasResponse.json();
+        
+        // Merge and Render
+        ALUNOS_NOTAS_REAIS = mergeStudentNotes(alunos, notas, CONFIG_DISCIPLINA.siglasComponentes);
+        
+        renderEditButtons(CONFIG_DISCIPLINA.siglasComponentes);
+        renderTable(CONFIG_DISCIPLINA.siglasComponentes, CONFIG_DISCIPLINA.formula);
+
+    } catch (error) {
+        console.error('Erro geral no carregamento:', error);
+        alert('Erro ao carregar os dados da turma.');
+    }
 }
 
 
@@ -80,39 +154,55 @@ function renderTable(siglas, formula) {
         notasTableHeaderRow.insertBefore(th, notaFinalHeader);
     });
 
+    // Limpa o corpo da tabela e preenche com os dados reais
+    notasTableBody.innerHTML = ''; 
+    
+    if (ALUNOS_NOTAS_REAIS.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="${siglas.length + 3}" style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum aluno cadastrado nesta turma.</td>`;
+        notasTableBody.appendChild(tr);
+        return;
+    }
+
     // Preenche as células para cada aluno.
-    SIMULACAO_ALUNOS_NOTAS.forEach(alunoData => {
-        const linha = notasTableBody.querySelector(`tr[data-aluno-id="${alunoData.id}"]`);
+    ALUNOS_NOTAS_REAIS.forEach(alunoData => {
+        const linha = document.createElement('tr');
+        linha.dataset.alunoId = alunoData.id;
+        linha.innerHTML = `
+            <td>${alunoData.matricula}</td>
+            <td>${alunoData.nome}</td>
+        `;
         
-        if (linha) {
-            linha.querySelectorAll('.cell-nota').forEach(cell => cell.remove());
-            const notaFinalCell = linha.querySelector('.cell-nota-final');
+        const notaFinalCell = document.createElement('td');
+        notaFinalCell.className = 'cell-nota-final';
+        notaFinalCell.innerHTML = `<span data-aluno-id="${alunoData.id}">-</span>`;
 
-            siglas.forEach(sigla => {
-                const notaAluno = alunoData.notas.find(n => n.sigla === sigla) || { valor: null };
-                
-                const td = document.createElement('td');
-                td.className = 'cell-nota';
-                td.dataset.componente = sigla;
-                
-                // O <span> para visualização, o <input> para edição.
-                const span = document.createElement('span');
-                span.textContent = formatNote(notaAluno.valor);
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.min = '0';
-                input.max = '10';
-                input.step = '0.01';
-                input.value = notaAluno.valor !== null ? notaAluno.valor.toFixed(2) : '';
-                input.style.display = 'none'; 
+        siglas.forEach(sigla => {
+            const notaAluno = alunoData.notas.find(n => n.sigla === sigla) || { valor: null };
+            
+            const td = document.createElement('td');
+            td.className = 'cell-nota';
+            td.dataset.componente = sigla;
+            
+            const span = document.createElement('span');
+            span.textContent = formatNote(notaAluno.valor);
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.max = '10';
+            input.step = '0.01';
+            input.value = notaAluno.valor !== null ? notaAluno.valor.toFixed(2) : ''; 
+            input.style.display = 'none'; 
 
-                td.appendChild(span);
-                td.appendChild(input);
-                linha.insertBefore(td, notaFinalCell);
-            });
-
-            calculateAndDisplayFinalNote(alunoData, formula);
-        }
+            td.appendChild(span);
+            td.appendChild(input);
+            linha.appendChild(td);
+        });
+        
+        linha.appendChild(notaFinalCell);
+        notasTableBody.appendChild(linha);
+        
+        calculateAndDisplayFinalNote(alunoData, formula);
     });
 }
 
@@ -135,6 +225,7 @@ function formatNote(value) {
     if (value === null || value === undefined || isNaN(value)) {
         return '-';
     }
+    // Garante que o valor é tratado como float antes de fixar 2 casas
     return parseFloat(value).toFixed(2);
 }
 
@@ -171,7 +262,6 @@ function cancelEditMode() {
     // Volta a mostrar o <span> e esconde o <input>.
     document.querySelectorAll('.cell-nota input[type="number"]').forEach(input => {
         input.style.display = 'none';
-        // O span é o elemento anterior ao input
         input.previousElementSibling.style.display = 'inline-block'; 
     });
 
@@ -183,12 +273,28 @@ function cancelEditMode() {
     dynamicEditButtonsContainer.style.display = 'flex';
 }
 
-// Salva as notas digitadas.
-function saveNotes() {
+
+//  FUNÇÃO SAVE NOTES: COLETA DADOS E CHAMA A API 
+async function saveNotes() {
     if (!COMPONENTE_EDITANDO || !CONFIG_DISCIPLINA) return;
     
+    const params = getUrlParams();
+    const { turmaId } = params; 
+    
+    const componenteSigla = COMPONENTE_EDITANDO;
+    // Obtém o ID real do componente usando o mapa
+    const componenteId = COMPONENTES_MAP.get(componenteSigla); 
+    
+    if (componenteId === undefined || !turmaId) {
+        alert(`Erro: ID da turma ou ID do componente (${componenteSigla}) não encontrado.`);
+        cancelEditMode();
+        return;
+    }
+    
+    const notasParaEnviar = [];
     let notasProcessadas = 0;
-    const cellsToSave = document.querySelectorAll(`.cell-nota[data-componente="${COMPONENTE_EDITANDO}"]`);
+    
+    const cellsToSave = document.querySelectorAll(`.cell-nota[data-componente="${componenteSigla}"]`);
     
     cellsToSave.forEach(cell => {
         const input = cell.querySelector('input');
@@ -204,14 +310,21 @@ function saveNotes() {
             valorParaSalvar = novoValor;
         }
 
-        // Atualiza os dados simulados.
-        const alunoData = SIMULACAO_ALUNOS_NOTAS.find(a => a.id.toString() === alunoId);
+        //ATUALIZA DADOS LOCAIS (ALUNOS_NOTAS_REAIS)
+        const alunoData = ALUNOS_NOTAS_REAIS.find(a => a.id.toString() === alunoId);
         if (alunoData) {
-            let nota = alunoData.notas.find(n => n.sigla === COMPONENTE_EDITANDO);
+            let nota = alunoData.notas.find(n => n.sigla === componenteSigla);
             if (nota) nota.valor = valorParaSalvar;
-            else alunoData.notas.push({ sigla: COMPONENTE_EDITANDO, valor: valorParaSalvar });
+            else alunoData.notas.push({ sigla: componenteSigla, valor: valorParaSalvar });
             
-            // Atualiza a tela e recalcula.
+            // PREPARA DADOS PARA A API
+            notasParaEnviar.push({
+                aluno_id: parseInt(alunoId, 10), 
+                componente_id: componenteId, 
+                valor: valorParaSalvar
+            });
+            
+            // ATUALIZA A TELA E RECALCULA LOCALMENTE
             span.textContent = formatNote(valorParaSalvar);
             input.value = valorParaSalvar !== null ? valorParaSalvar.toFixed(2) : '';
             calculateAndDisplayFinalNote(alunoData, CONFIG_DISCIPLINA.formula);
@@ -219,8 +332,36 @@ function saveNotes() {
         }
     });
 
-    alert(`Notas de ${COMPONENTE_EDITANDO} salvas. ${notasProcessadas} notas atualizadas.`);
-    cancelEditMode(); 
+    // CHAMA A API
+    try {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(`/api/turmas/${turmaId}/notas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                turma_id: turmaId, // Enviado para segurança extra no backend
+                notas: notasParaEnviar
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`Notas de ${componenteSigla} salvas com sucesso! ${notasProcessadas} notas atualizadas.`);
+        } else {
+            alert(`Erro ao salvar notas na API: ${result.error || 'Erro desconhecido.'}`);
+        }
+
+    } catch (error) {
+        console.error('Falha na comunicação com o servidor:', error);
+        alert('Falha ao se conectar com o servidor para salvar as notas.');
+    } finally {
+        cancelEditMode(); 
+    }
 }
 
 

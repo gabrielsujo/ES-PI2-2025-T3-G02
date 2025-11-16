@@ -4,7 +4,7 @@
   "description": "\"#ES-PI2-2025-T3-G02\"",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --compiler-options \"{\\\"module\\\": \\\"CommonJS\\\"}\" src/server.ts",
+    "dev": "ts-node-dev --compiler-options \"{\\\"module\\\": \\\"CommonJS\\\", \\\"allowJs\\\": true}\" src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc"
   },

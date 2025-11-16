@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- REFERÊNCIAS DO DOM ---
+    //  pegando os botões, inputs e etc.
     const token = localStorage.getItem('token');
     if (!token) {
         window.location.href = 'login.html';
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('modal-instituicao');
     const modalTitle = document.getElementById('modal-instituicao-title');
     const form = document.getElementById('form-instituicao');
-    const hiddenIdInput = document.getElementById('instituicao-id-hidden'); // ⬅️ Referência para o input hidden
+    const hiddenIdInput = document.getElementById('instituicao-id-hidden');
     const nomeInput = document.getElementById('instituicao-nome');
     const submitButton = document.getElementById('modal-instituicao-submit');
     
@@ -18,17 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const listaInstituicoes = document.getElementById('instituicoes-lista');
     const emptyMsg = document.getElementById('empty-state-msg');
     
-    // --- CABEÇALHOS GLOBAIS DA API ---
+    //  headers da api para não ficar repetindo
     const apiHeaders = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
     };
 
-    // --- FUNÇÕES ---
+    //  funções principais
 
-    /**
-     * READ (GET): Busca instituições na API e as renderiza
-     */
+    // busca as instituições na api e desenha na tela
     async function carregarInstituicoes() {
         listaInstituicoes.innerHTML = ''; 
         emptyMsg.style.display = 'none';
@@ -36,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/instituicoes', { headers: apiHeaders });
 
+            // se o token tiver expirado, manda pro login
             if (response.status === 401 || response.status === 403) { 
                 alert('Sua sessão expirou. Faça o login novamente.');
                 localStorage.removeItem('token');
@@ -49,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 emptyMsg.style.display = 'block';
             } else {
                 instituicoes.forEach(inst => {
+                    // essa função agora lê a contagem de disciplinas
                     const card = criarCardInstituicao(inst);
                     listaInstituicoes.appendChild(card);
                 });
@@ -59,17 +59,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Helper: Cria o HTML do Card
-     */
+    // cria o html do card
+    // (aqui está a correção do bug)
     function criarCardInstituicao(inst) {
         const article = document.createElement('article');
         article.className = 'card';
         
+        // --- início da correção ---
+        // verifica a contagem de disciplinas (inst.totalDisciplinas)
+        let subtitleHtml = '';
+        if (!inst.totalDisciplinas || inst.totalDisciplinas === 0) {
+            subtitleHtml = '<p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p>';
+        } else if (inst.totalDisciplinas === 1) {
+            subtitleHtml = '<p class="card-subtitle">1 disciplina cadastrada</p>';
+        } else {
+            subtitleHtml = `<p class="card-subtitle">${inst.totalDisciplinas} disciplinas cadastradas</p>`;
+        }
+        // --- fim da correção ---
+
         article.innerHTML = `
             <div class="card-content">
                 <h3>${inst.nome}</h3>
-                <p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p> 
+                ${subtitleHtml} 
             </div>
             <div class="card-actions card-actions-multi">
                 <button class="btn-danger-outline btn-excluir" 
@@ -91,49 +102,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return article;
     }
 
-    // --- Funções de Abrir/Fechar Modal ---
+    // --- funções do modal (abrir/fechar) ---
 
+    // abre o modal para criar
     function abrirModalParaCriar() {
         modalTitle.textContent = 'Adicionar Nova Instituição';
-        hiddenIdInput.value = ''; // Limpa o ID
-        nomeInput.value = ''; // Limpa o nome
+        hiddenIdInput.value = ''; // limpa o id
+        nomeInput.value = ''; // limpa o nome
         submitButton.textContent = 'Salvar Instituição';
         modal.style.display = 'flex';
         nomeInput.focus();
     }
 
-    // --- ADICIONADO PARA EDITAR ---
-    // Preenche o modal com os dados existentes
+    // abre o modal para editar
     function abrirModalParaEditar(id, nome) {
         modalTitle.textContent = 'Editar Instituição';
-        hiddenIdInput.value = id; // Define o ID para o modo de edição
-        nomeInput.value = nome; // Preenche o nome atual
+        hiddenIdInput.value = id; // bota o id no campo escondido
+        nomeInput.value = nome; // bota o nome atual no input
         submitButton.textContent = 'Atualizar';
         modal.style.display = 'flex';
         nomeInput.focus();
     }
 
+    // fecha qualquer modal
     function fecharModal() {
         modal.style.display = 'none';
-        form.reset(); // Limpa o formulário ao fechar
-        hiddenIdInput.value = ''; // Garante que o ID foi limpo
+        form.reset(); // limpa o form
+        hiddenIdInput.value = ''; // garante que limpou o id
     }
 
-    /**
-     * CREATE (POST) / UPDATE (PUT): Salva ou Edita
-     */
-    // --- ATUALIZADO PARA EDITAR ---
+    // 4. salvar (serve para criar ou editar)
     async function salvarInstituicao(event) {
         event.preventDefault();
         const nome = nomeInput.value.trim();
-        const id = hiddenIdInput.value; // Pega o ID (estará vazio se for "Criar")
+        const id = hiddenIdInput.value; // pega o id (se tiver)
         
         if (!nome) {
             alert('O nome é obrigatório.');
             return;
         }
 
-        // Verifica se é modo de Edição (se tem ID)
+        // se tem id, edita. se não, cria.
         const isEditMode = id !== '';
         const url = isEditMode ? `/api/instituicoes/${id}` : '/api/instituicoes';
         const method = isEditMode ? 'PUT' : 'POST';
@@ -150,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 alert(isEditMode ? 'Instituição atualizada!' : 'Instituição criada!');
                 fecharModal();
-                carregarInstituicoes(); // Recarrega a lista
+                carregarInstituicoes(); // recarrega a lista
             } else {
                 alert(`Erro: ${result.error || 'Não foi possível salvar.'}`);
             }
@@ -159,29 +168,27 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Falha na comunicação com o servidor.');
         }
     }
-
-
-    // --- EVENT LISTENERS ---
-    
+    // carrega tudo assim que a página abre
     carregarInstituicoes();
 
+    // clique no botão "adicionar instituição"
     btnAdd.addEventListener('click', abrirModalParaCriar);
 
+    // clique no botão "sair"
     btnLogout.addEventListener('click', () => {
         localStorage.removeItem('token');
         window.location.href = 'login.html';
     });
 
+    // clique nos botões de fechar modal (x e cancelar)
     modal.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
         btn.addEventListener('click', fecharModal);
     });
-
     form.addEventListener('submit', salvarInstituicao);
 
-    // --- ADICIONADO PARA EDITAR ---
-    // Listener para os botões "Editar" (usa delegação de eventos na lista)
+    // clique no botão editar de um card (usa delegação de evento)
     listaInstituicoes.addEventListener('click', (e) => {
-        // Verifica se o clique foi num botão de editar
+        // procura pelo botão '.btn-editar' mais próximo
         const editButton = e.target.closest('.btn-editar');
         if (editButton) {
             const id = editButton.dataset.id;

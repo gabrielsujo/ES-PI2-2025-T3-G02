@@ -25,46 +25,11 @@
         </div>
 
         <section id="instituicoes-lista" class="card-grid">
-            <article class="card">
-                <div class="card-content">
-                    <h3>PUC-Campinas</h3>
-                    <p class="card-subtitle">Projeto Integrador 2</p>
-                </div>
-                <div class="card-actions card-actions-multi">
-                    <button class="btn-danger-outline btn-excluir" 
-                            data-id="1" 
-                            data-nome="PUC-Campinas" 
-                            data-tipo="instituicao">
-                        Remover
-                    </button>
-                    <a href="./disciplinas.html" class="btn-secondary">
-                        Gerenciar Disciplinas
-                    </a>
-                </div>
-            </article>
+            </section>
 
-            <article class="card">
-                <div class="card-content">
-                    <h3>Unicamp</h3>
-                    <p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p>
-                </div>
-                <div class="card-actions card-actions-multi">
-                     <button class="btn-danger-outline btn-excluir" 
-                            data-id="2" 
-                            data-nome="Unicamp" 
-                            data-tipo="instituicao">
-                        Remover
-                    </button>
-                    <a href="./disciplinas.html" class="btn-secondary">
-                        Gerenciar Disciplinas 
-                    </a>
-                </div>
-            </article>
-
-            <p id="empty-state-msg" style="display: none;">
-                Você ainda não cadastrou nenhuma instituição.
-            </p>
-        </section>
+        <p id="empty-state-msg" style="display: none; padding: 2rem; text-align: center; color: var(--text-secondary);">
+            Você ainda não cadastrou nenhuma instituição.
+        </p>
     </main>
 
     <div id="modal-instituicao" class="modal-overlay" style="display: none;">
@@ -74,6 +39,8 @@
                 <button class="modal-close-btn">&times;</button>
             </div>
             <form id="form-instituicao">
+                <input type="hidden" id="instituicao-id-hidden" name="id">
+
                 <div class="input-group">
                     <label for="instituicao-nome">NOME DA INSTITUIÇÃO</label>
                     <input type="text" id="instituicao-nome" name="nome" placeholder="Ex: PUC-Campinas" required>
@@ -81,7 +48,7 @@
                 
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
-                    <button type="submit" class="btn-primary">Salvar Instituição</button>
+                    <button type="submit" id="modal-instituicao-submit" class="btn-primary">Salvar Instituição</button>
                 </div>
             </form>
         </div>
@@ -106,5 +73,3 @@
     <script src="./js/delete-manager.js"></script>
 </body>
 </html>
-
-

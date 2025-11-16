@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 //  Chave Secreta
-const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
+const JWT_SECRET = process.env.JWT_SECRET || 'secret_key';
 
 //  Interface para adicionar 'userId' ao objeto Request
 // Isso resolve o erro de tipagem no TypeScript

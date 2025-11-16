@@ -131,4 +131,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Iniciar ---
     carregarInstituicoes();
+
 });

@@ -22,6 +22,14 @@ document.addEventListener('DOMContentLoaded', () =>{
     const urlParams = new URLSearchParams(window.location.search);
     const turmaId = urlParams.get('turma_id');
     
+    const disciplinaId = urlParams.get('disciplina_id');
+    const instituicaoId = urlParams.get('instituicao_id');
+
+    const breadcrumbDisciplinas = document.getElementById('breadcrumb-disciplinas');
+    if (breadcrumbDisciplinas && instituicaoId) {
+        breadcrumbDisciplinas.href = `./disciplinas.html?instituicao_id=${instituicaoId}`;
+    }
+
     // Se não tem ID da turma, avisa e desabilita os botões
     if (!turmaId) {
         console.warn('ID da turma não encontrado na URL. A importação e adição não funcionarão');
@@ -256,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () =>{
 
             if (!confirmacao) return;
 
-            submitButton.textContent = 'Removendo...';
+            btnRemoveSelecionados.textContent = 'Removendo...';
             btnRemoveSelecionados.disabled = true;
             
 
@@ -375,7 +383,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
     
-    // Se tiver o ID da turma e a tabela existir, carrega os alunos quando a página abre
     if (turmaId && tabelaBody) {
         loadAlunos();
     }

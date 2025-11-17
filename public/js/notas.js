@@ -1,4 +1,4 @@
-import { calcularNotaFinal } from '../src/utils/CalculoNotas.js';
+import { calcularNotaFinal } from '/utils/CalculoNotas.js';
 
 // Variáveis Globais de Estado
 let CONFIG_DISCIPLINA = null;

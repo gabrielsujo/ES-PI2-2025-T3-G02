@@ -51,7 +51,7 @@ router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
     }
 
     if(!nome || !sigla || !disciplina_id) {
-        return res.status(400).json({ error: 'Nome, sigla e ID são obrigatórios. '});
+        return res.status(400).json({ error: 'Nome, sigla e ID da disciplina são obrigatórios. '});
     }
 
     try {

@@ -308,8 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const token = getToken();
         
-        if (G_COMPONENTES.length === 0) {
-            alert('Adicione componentes antes de definir uma fórmula.');
+        if (G_COMPONENTES.length < 2) {
+            alert('Você precisa cadastrar no minimo 2 componentes (ex p1 e p2) para definir uma fórmula.');
             return;
         }
 

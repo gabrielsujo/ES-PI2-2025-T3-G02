@@ -472,3 +472,59 @@ main.container {
     flex-shrink: 0; 
 
 }
+
+.card-actions-multi.d-flex {
+    margin-top: 15px;
+    align-items: center;
+}
+
+
+.btn-primary-main {
+    display: inline-block;
+    padding: 12px 25px; 
+    font-size: 1.05rem; 
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+    min-width: 220px; 
+    
+    background-color: var(--color-primary, #007bff); 
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    
+ 
+    margin-left: 25px; 
+}
+
+.btn-primary-main:hover {
+    background-color: var(--color-primary-dark, #0056b3);
+}
+
+
+.btn-small-group {
+ 
+    margin-right: 25px;
+}
+
+
+.btn-small-group .btn-editar,
+.btn-small-group .btn-excluir {
+ 
+    width: 75px; 
+    min-width: 75px; 
+    text-align: center;
+    display: inline-block; 
+
+
+    padding: 4px 10px; 
+    font-size: 0.8rem;
+    line-height: 1; 
+}
+
+
+.btn-small-group .btn-editar {
+    margin-right: 8px !important; 
+}
+
+

@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. referências principais ---
     const institutionId = getUrlParam('instituicao_id');
     const listaDisciplinas = document.getElementById('disciplinas-lista');
+    const headerInstituicaoNome = document.getElementById('instituicao-header');
 
     // modal de disciplina
     const modalDisciplina = document.getElementById('modal-disciplina');
@@ -61,8 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const err = await response.json();
                 throw new Error(err.error || 'Não foi possível carregar as disciplinas');
             }
-
-            const disciplinas = await response.json();
+            
+            const data = await response.json();
+            const disciplinas = data.disciplinas;
+            const instituicaoNome = data.instituicao.nome;
+            if (headerInstituicaoNome) {
+                headerInstituicaoNome.textContent = instituicaoNome;
+            }
+            
 
             if (disciplinas.length === 0) {
                 listaDisciplinas.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nenhuma disciplina cadastrada.</p>';
@@ -340,3 +347,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 8. início ---
     carregarDisciplinas();
 });
+

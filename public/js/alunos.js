@@ -22,18 +22,13 @@ document.addEventListener('DOMContentLoaded', () =>{
     const urlParams = new URLSearchParams(window.location.search);
     const turmaId = urlParams.get('turma_id');
     
-    // --- INÍCIO DA CORREÇÃO ---
-    // Precisamos de TODOS os IDs da URL para construir os links de navegação
     const disciplinaId = urlParams.get('disciplina_id');
     const instituicaoId = urlParams.get('instituicao_id');
 
-    // Encontra o link "Disciplinas" pelo ID que demos a ele no HTML
     const breadcrumbDisciplinas = document.getElementById('breadcrumb-disciplinas');
     if (breadcrumbDisciplinas && instituicaoId) {
-        // Define o link corretamente, passando o ID da instituição
         breadcrumbDisciplinas.href = `./disciplinas.html?instituicao_id=${instituicaoId}`;
     }
-    // --- FIM DA CORREÇÃO ---
 
     // Se não tem ID da turma, avisa e desabilita os botões
     if (!turmaId) {

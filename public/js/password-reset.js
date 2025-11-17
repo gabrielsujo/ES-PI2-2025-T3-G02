@@ -63,10 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const novaSenha = document.getElementById('nova-senha').value;
             const confirmarSenha = document.getElementById('confirmar-nova-senha').value;
 
+            
             if (novaSenha !== confirmarSenha) {
                 alert('As senhas não coincidem.');
                 return;
             }
+            
 
             if (!token) {
                 alert('Erro: Token ausente.');

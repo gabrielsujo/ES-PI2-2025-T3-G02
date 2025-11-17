@@ -8,7 +8,11 @@ function registrarUsuario(event) {
     const telefone = document.getElementById('telefone').value;
     const senha = document.getElementById('senha').value;
     const confirmarSenha = document.getElementById('confirmar-senha').value; 
-            
+ 
+    if (senha.length < 4) {
+        alert('A senha deve ter no mínimo 4 caracteres.');
+        return;
+    }
     if (senha !== confirmarSenha) {
         alert('As senhas digitadas não coincidem. Por favor, verifique.');
         return;

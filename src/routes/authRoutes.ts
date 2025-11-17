@@ -15,6 +15,9 @@ router.post('/register', async (req: Request, res: Response) => {
     if (!nome || !email || !senha) {
         return res.status(400).json({ error: 'todos os campos são obrigatorios.'});
     }
+    if (senha.length < 4) {
+        return res.status(400).json({ error: 'A senha deve ter no mínimo 4 caracteres.' });
+    }
 
     try {
 
@@ -139,6 +142,9 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 
     if (!token || !novaSenha) {
         return res.status(400).json({ error: 'Token e nova senha são obrigatórios.' });
+    }
+    if (novaSenha.length < 4) {
+        return res.status(400).json({ error: 'A nova senha deve ter no mínimo 4 caracteres.' });
     }
 
     try {

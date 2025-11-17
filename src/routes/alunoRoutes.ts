@@ -9,6 +9,7 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Rota para listar alunos
 router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
     const usuarioId = req.userId;
@@ -41,6 +42,7 @@ router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthReques
     }
 });
 
+// Rota para adicionar aluno manualmente
 router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
     const { matricula, nome, turma_id } = req.body;
     const usuarioId = req.userId;
@@ -84,7 +86,7 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         console.error(err);
         
         if (err && typeof err === 'object' && 'code' in err) {
-            if (err.code === '23505') { 
+            if (err.code === '23505') { // Primary key violation
                 return res.status(409).json({ error: 'Matrícula já cadastrada nesta turma.' });
             }
         }
@@ -93,6 +95,7 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
     }
 });
 
+// Rota para atualizar aluno
 router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     const { id } = req.params;
     const { matricula, nome } = req.body;
@@ -117,7 +120,7 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
         );
 
         if (alunoCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Alunos não encontrados ou não autorizado.'});
+            return res.status(404).json({ error: 'Aluno não encontrado ou não autorizado.'});
         }
 
         const alunoAtualizado = await pool.query(
@@ -137,6 +140,7 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     }
 });
 
+// Rota de Importação de Alunos via CSV 
 router.post(
     '/turmas/:turma_id/alunos/import-csv',
     authenticateToken,
@@ -146,52 +150,70 @@ router.post(
     const { turma_id } = req.params;
     const usuarioId = req.userId;
 
-    if (!req.file) {
-        return res.status(400).json({ error: 'Nenhum arquivo CSV enviado.'});
+    if (!req.file || !req.file.buffer) {
+        return res.status(400).json({ error: 'Nenhum arquivo CSV válido enviado.'});
     }
     
+
     try {
+        const turmaIdNum = parseInt(turma_id, 10);
+
+        if (isNaN(turmaIdNum)) {
+            return res.status(400).json({ error: 'ID da turma inválido.' });
+        }
+
         const turmaCheck = await pool.query(
             `SELECT t.id FROM turmas t
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE t.id = $1 AND i.usuario_id = $2`,
-            [turma_id, usuarioId]
+            [turmaIdNum, usuarioId]
         );
         if (turmaCheck.rows.length === 0) {
-            return res.status(403).json({ error: 'Ação não autorizada.' });
+            return res.status(403).json({ error: 'Ação não autorizada. Turma não encontrada ou não pertence ao usuário.' });
         }
 
         const existentesResult = await pool.query(
             'SELECT matricula FROM alunos WHERE turma_id = $1',
-            [turma_id]
+            [turmaIdNum]
         );
+    
         const matriculaExistentes = new Set(existentesResult.rows.map(r => r.matricula));
 
         const alunosParaAdicionar: { matricula: string, nome: string } [] = [];
         let linhasInvalidas = 0;
+        let linhasDuplicadas = 0; 
 
         const bufferStream = new Readable();
         bufferStream.push(req.file.buffer);
         bufferStream.push(null);
 
+     
         await new Promise<void>((resolve, reject) => {
             bufferStream
             .pipe(csvParser({
+
                 mapHeaders: ({ header }) => header.toLowerCase(),
-                separator: ';',
-                skipLines: 1 
+
+                separator: ',',
             }))
             .on('data', (row) => {
+                // Remove espaços em branco e garante que os campos existem
                 const matricula = row.matricula?.trim();
                 const nome = row.nome?.trim();
                 
-                const matriculaRegex = /^[0-9]+$/;
-                const nomeRegex = /^[^0-9]*$/;
 
-                if (matricula && nome && matriculaRegex.test(matricula) && nomeRegex.test(nome) && !matriculaExistentes.has(matricula)) {
-                    matriculaExistentes.add(matricula);
-                    alunosParaAdicionar.push({ matricula, nome });
+                const matriculaRegex = /^[0-9]+$/;
+                const nomeRegex = /^[^0-9]*$/; 
+
+                if (matricula && nome && matriculaRegex.test(matricula) && nomeRegex.test(nome)) {
+                    // Checa por duplicatas no banco ou no próprio arquivo CSV
+                    if (!matriculaExistentes.has(matricula)) {
+                        matriculaExistentes.add(matricula); 
+                        alunosParaAdicionar.push({ matricula, nome });
+                    } else {
+                        linhasDuplicadas++; 
+                    }
                 } else if (matricula || nome) {
                     linhasInvalidas++;
                 }
@@ -200,6 +222,7 @@ router.post(
             .on('error', reject);
         });
 
+
         if (alunosParaAdicionar.length > 0) {
             const client = await pool.connect();
             try {
@@ -207,7 +230,7 @@ router.post(
                 for (const aluno of alunosParaAdicionar) {
                     await client.query(
                         'INSERT INTO alunos (matricula, nome, turma_id) VALUES ($1, $2, $3)',
-                        [aluno.matricula, aluno.nome, turma_id]
+                        [aluno.matricula, aluno.nome, turmaIdNum]
                     );
                 }
                 await client.query('COMMIT');
@@ -219,11 +242,17 @@ router.post(
             }
         }
         
-        let message = `${alunosParaAdicionar.length} alunos importados com sucesso.`;
-        if (linhasInvalidas > 0) {
-            message += ` ${linhasInvalidas} linhas foram ignoradas (matrícula/nome inválido, duplicado, ou dados em falta).`;
-        }
 
+        let message = `${alunosParaAdicionar.length} alunos importados com sucesso.`;
+        
+        // Adiciona feedback sobre linhas ignoradas
+        if (linhasDuplicadas > 0) {
+            message += ` ${linhasDuplicadas} matrículas ignoradas (já existiam ou eram duplicadas no arquivo).`;
+        }
+        if (linhasInvalidas > 0) {
+             message += ` ${linhasInvalidas} linhas ignoradas (matrícula/nome inválido, ou dados em falta).`;
+        }
+        
         res.status(201).json({
             message: message,
             importados: alunosParaAdicionar.length
@@ -231,10 +260,15 @@ router.post(
 
     } catch(err) {
         console.error('Erro na importação de CSV', err);
+
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
+             return res.status(400).json({ error: 'Erro de vínculo: A Turma especificada não existe.' });
+        }
         res.status(500).json({ error: 'Erro interno de servidor ao processar o CSV' });
     }
 });
 
+// Rota para deletar alunos em lote
 router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
     const { ids } = req.body; 
     const usuarioId = req.userId;
@@ -288,6 +322,7 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
     }
 });
 
+// Rota para deletar aluno individual
 router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     const { id } = req.params;
     const usuarioId = req.userId;

@@ -217,9 +217,17 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
         
         //gerar o CSV e o nome do arquivo
         const csvString = Papa.unparse(dataParaCsv, { columns: headers, delimiter: ";"});
-        const timestamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0, 19);
-        const fileName = `export_${turma_nome.replace(/ /g, '_')}_${timestamp}.csv`;
+        //timestamp no formato YYYY-MM-DD_hhmmssms
+        const now = new Date();
+        const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+        const time = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}${now.getMilliseconds().toString().padStart(3, '0')}`;
+        const timestamp = `${date}_${time}`;
 
+        //limpar o nome da turma
+        const turmaNomeSimples = turma_nome.replace(/ /g, '');
+        //pegar a sigla da disciplina
+        const sigla = disciplina_sigla || 'DISC';
+        const fileName = `${timestamp}-${turmaNomeSimples}_${sigla}.csv`;
         // enviar o arquivo como resposta
         res.setHeader('Content-type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);

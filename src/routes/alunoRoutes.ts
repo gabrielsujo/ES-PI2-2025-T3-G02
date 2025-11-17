@@ -267,7 +267,7 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
             `SELECT a.id FROM alunos a
             JOIN turmas t ON a.turma_id = t.id
             JOIN disciplinas d ON t.disciplina_id = d.id
-            JOIN instituicoes i ON d.insituicao_id = i.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE i.usuario_id = $1 AND a.id = ANY($2::int[])`,
             [usuarioId, alunosIds]
         );

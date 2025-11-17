@@ -50,7 +50,7 @@ router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
         return res.status(403).json({ error: 'Autorização necessária.'});
     }
 
-    if(!nome || !sigla || !desc || !disciplina_id) {
+    if(!nome || !sigla || !disciplina_id) {
         return res.status(400).json({ error: 'Nome, sigla e ID são obrigatórios. '});
     }
 

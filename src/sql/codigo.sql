@@ -49,7 +49,8 @@ CREATE TABLE Alunos (
     nome VARCHAR(255) NOT NULL,
     matricula VARCHAR(50),
     turma_id INT NOT NULL,
-    FOREIGN KEY (turma_id) REFERENCES Turmas(id)
+    FOREIGN KEY (turma_id) REFERENCES Turmas(id),
+    CONSTRAINT uq_matricula_turma UNIQUE (matricula, turma_id)
 );
 
 CREATE TABLE Notas (
@@ -124,3 +125,4 @@ CREATE TRIGGER TRG_AUDITORIA_NOTAS
     AFTER INSERT OR UPDATE ON Notas
     FOR EACH ROW
     EXECUTE FUNCTION func_auditoria_notas();
+

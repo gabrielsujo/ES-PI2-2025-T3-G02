@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alunos - Projeto NotaDez</title>
+    <title>Disciplinas - Projeto NotaDez</title>
     <link rel="stylesheet" href="./styles/dashboard.css">
-    <link rel="stylesheet" href="./styles/alunos.css">
+    <link rel="stylesheet" href="./styles/disciplinas.css">
 </head>
 <body>
     <header class="app-header">
@@ -13,120 +13,121 @@
             <h1>Projeto NotaDez</h1>
             <nav>
                 <a href="./dashboard.html" class="btn-secondary-nav">Minhas Instituições</a>
-                <a href="./disciplinas.html" class="btn-secondary-nav">Disciplinas</a>
             </nav>
         </div>
     </header>
 
     <main class="container">
         <div class="page-header">
-            <h2>Gerenciar Alunos: Projeto Integrador 2 - Turma 1</h2>
-        </div>
-
-        <div class="page-actions">
-            <button id="add-aluno-btn" class="btn-primary">
-                + Adicionar Aluno
-            </button>
-            <button id="import-csv-btn" class="btn-secondary">
-                Importar Alunos (CSV)
-            </button>
-            <button id="remove-selecionados-btn" class="btn-danger-outline" disabled>
-                Remover Selecionados
+            <h2>PUC-Campinas</h2>
+            <button id="add-disciplina-btn" class="btn-primary">
+                + Adicionar Disciplina
             </button>
         </div>
 
-        <section class="table-container card">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="col-checkbox">
-                            <input type="checkbox" id="select-all-alunos" title="Selecionar Todos">
-                        </th>
-                        <th class="col-matricula">Matrícula</th>
-                        <th class="col-nome">Nome Completo</th>
-                        <th class="col-acoes">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="alunos-tabela-body">
-                    <tr>
-                        <td class="cell-checkbox">
-                            <input type="checkbox" name="alunoSelecionado" value="100" data-nome="Pessoa 1">
-                        </td>
-                        <td data-field="matricula">100</td>
-                        <td data-field="nome">Pessoa 1</td> 
-                        <td class="table-actions">
-                            <button class="btn-table-action btn-edit">Editar</button>
-                            <button class="btn-table-action btn-remove btn-excluir"
-                                    data-id="100" data-nome="Pessoa 1" data-tipo="aluno">
-                                Remover
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="cell-checkbox">
-                            <input type="checkbox" name="alunoSelecionado" value="101" data-nome="Pessoa 2">
-                        </td>
-                         <td data-field="matricula">101</td>
-                         <td data-field="nome">Pessoa 2</td> 
-                        <td class="table-actions">
-                            <button class="btn-table-action btn-edit">Editar</button>
-                             <button class="btn-table-action btn-remove btn-excluir"
-                                    data-id="101" data-nome="Pessoa 2" data-tipo="aluno">
-                                Remover
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <p id="empty-state-msg" style="display: none;">
-                Nenhum aluno cadastrado nesta turma.
-            </p>
+        <section id="disciplinas-lista" class="card-grid">
+            <article class="card disciplina-card">
+                <div class="card-content">
+                    <h3>Projeto Integrador 2</h3>
+                    <p><strong>Código:</strong> 001 | <strong>Sigla:</strong> PI2 | <strong>Período:</strong> 4º Semestre</p>
+                </div>
+                
+                <div class="turmas-section">
+                    <h4>Turmas</h4>
+                    <ul class="turmas-lista">
+                        <li class="turma-item">
+                            <span>Turma 1 - Seg, 19:00</span>
+                            <div class="turma-actions">
+                                <a href="./alunos.html" class="btn-tertiary">Gerenciar Alunos</a>
+                                <a href="./notas.html" class="btn-tertiary">Lançar Notas</a>
+                                <button class="btn-tertiary-danger btn-excluir"
+                                        data-id="101"
+                                        data-nome="Turma 1"
+                                        data-tipo="turma">
+                                    Remover
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
+                    <button class="btn-secondary-small btn-add-turma">+ Adicionar Turma</button>
+                </div>
+
+                <div class="card-actions disciplina-actions card-actions-multi">
+                    <button class="btn-danger-outline btn-excluir"
+                            data-id="10"
+                            data-nome="Projeto Integrador 2"
+                            data-tipo="disciplina">
+                        Remover
+                    </button>
+                    <a href="./componentes.html" class="btn-secondary">Configurar componentes</a>
+                </div>
+            </article>
         </section>
     </main>
 
-    <div id="modal-aluno" class="modal-overlay" style="display: none;">
-        <div class="modal-content card">
+     <div id="modal-disciplina" class="modal-overlay" style="display: none;">
+         <div class="modal-content card">
             <div class="modal-header">
-                <h3 id="modal-aluno-title">Adicionar Novo Aluno</h3>
+                <h3 id="modal-disciplina-title">Adicionar Nova Disciplina</h3>
                 <button class="modal-close-btn">&times;</button>
             </div>
-            <form id="form-aluno">
-                <input type="hidden" id="aluno-id-hidden" name="id">
-
+            <form id="form-disciplina">
                 <div class="input-group">
-                    <label for="aluno-matricula">MATRÍCULA (Identificador)</label>
-                    <input type="text" id="aluno-matricula" name="matricula" required>
+                    <label for="disciplina-nome">NOME</label>
+                    <input type="text" id="disciplina-nome" name="nome" placeholder="Ex: Cálculo" required>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="disciplina-sigla">SIGLA</label>
+                        <input type="text" id="disciplina-sigla" name="sigla" placeholder="Ex: C" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="disciplina-codigo">CÓDIGO</label>
+                        <input type="text" id="disciplina-codigo" name="codigo" placeholder="Ex: 001" required>
+                    </div>
                 </div>
                 <div class="input-group">
-                    <label for="aluno-nome">NOME COMPLETO</label>
-                    <input type="text" id="aluno-nome" name="nome" required>
+                    <label for="disciplina-periodo">PERÍODO</label>
+                    <input type="text" id="disciplina-periodo" name="periodo" placeholder="Ex: 4º Semestre" required>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
-                    <button type="submit" id="modal-aluno-submit-btn" class="btn-primary">Salvar Aluno</button>
+                    <button type="submit" class="btn-primary">Salvar Disciplina</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <div id="modal-csv" class="modal-overlay" style="display: none;">
+    <div id="modal-turma" class="modal-overlay" style="display: none;">
          <div class="modal-content card">
             <div class="modal-header">
-                <h3 id="modal-csv-title">Importar Alunos via CSV</h3>
+                <h3 id="modal-turma-title">Adicionar Nova Turma</h3>
                 <button class="modal-close-btn">&times;</button>
             </div>
-            <form id="form-csv">
+            <form id="form-turma">
                 <div class="input-group">
-                    <label for="csv-file">Arquivo .CSV</label>
-                    <input type="file" id="csv-file" name="csvFile" accept=".csv" required>
-                    <p class="form-hint">
-                        O arquivo deve conter a <strong>Matrícula</strong> na primeira coluna
-                        e o <strong>Nome</strong> na segunda coluna.
-                    </p>
+                    <label for="turma-nome">NOME DA TURMA</label>
+                    <input type="text" id="turma-nome" name="nome" placeholder="Ex: Turma 1" required>
                 </div>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="turma-dia">Dia da Semana</label>
+                        <input type="text" id="turma-dia" name="dia" placeholder="Ex: Segunda-feira" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="turma-horario">Horário</label>
+                        <input type="text" id="turma-horario" name="horario" placeholder="Ex: 19:00 - 20:40" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="turma-local">Local</label>
+                    <input type="text" id="turma-local" name="local" placeholder="Ex: Prédio C, Sala 301" required>
+                </div>
+                <input type="hidden" id="turma-disciplina-id" name="disciplinaId">
+                
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
-                    <button type="submit" class="btn-primary">Importar Arquivo</button>
+                    <button type="submit" class="btn-primary">Salvar Turma</button>
                 </div>
             </form>
         </div>
@@ -139,7 +140,7 @@
                 <button class="modal-close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <p id="modal-exclusao-msg">Tem certeza que deseja excluir [Nome do Item]? Esta ação é irrevogável.</p>
+                <p id="modal-exclusao-msg">Tem certeza? Lembre-se de remover todos os itens associados primeiro.</p>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary btn-cancel">Cancelar</button>
@@ -147,9 +148,8 @@
             </div>
         </div>
     </div>
-
     <script src="./js/delete-manager.js"></script>
-    <script src="./js/alunos.js"></script>
-
+    <script src="./js/disciplinas.js"></script>
 </body>
+
 </html>

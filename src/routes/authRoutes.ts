@@ -37,15 +37,10 @@ router.post('/register', async (req: Request, res: Response) => {
         );
         const novoUsuario = novoUsuarioResult.rows[0];
 
-
-        const token = jwt.sign({ userId: novoUsuario.id }, JWT_SECRET, { expiresIn: '1d' });
-
         res.status(201).json({
-            message: 'Usuário registrado com sucesso!',
-            userId: novoUsuario.id,
-            email: novoUsuario.email,
-            token: token
+            message: 'Usuário registrado com sucesso!'
         });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error interno do servidor.'});

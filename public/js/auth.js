@@ -39,9 +39,8 @@ function registrarUsuario(event) {
     })
     .then(result => {
         if (result.ok) { 
-            alert('Cadastro realizado com sucesso! A aceder à plataforma...');
-            localStorage.setItem('token', result.data.token); 
-            window.location.href = 'dashboard.html'; 
+            alert('Cadastro realizado com sucesso! Redirecionando para a página de login.');
+            window.location.href = 'login.html'; 
         } else {
             alert(`Erro no cadastro: ${result.data.error || result.data.message}`);
         }

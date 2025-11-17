@@ -1,25 +1,20 @@
-// Importa a função do utilitário
-import { generateFormula } from '/utils/GerarFormula.js'; // ✅ CORREÇÃO DEFINITIVA AQUI
+import { generateFormula } from '/utils/GerarFormula.js'; 
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- ESTADO GLOBAL ---
-    let G_COMPONENTES = []; // Armazena a lista de componentes
+    let G_COMPONENTES = [];
     let G_FORMULA_SALVA = '';
     let G_DISCIPLINA_ID = null;
     let G_INSTITUICAO_ID = null;
     let G_EDITANDO_COMPONENTE_ID = null;
 
-    // --- ELEMENTOS DOM ---
     const headerNomeDisciplina = document.getElementById('disciplina-nome-header');
     const linkVoltarDisciplinas = document.getElementById('back-to-disciplinas');
 
-    // Card de Componentes
     const listaComponentesUI = document.getElementById('componentes-lista');
     const emptyComponentesMsg = document.getElementById('empty-componentes-msg');
     const btnAddComponete = document.getElementById('add-componente-btn');
 
-    // Card de Fórmula
     const formFormula = document.getElementById('form-formula-config');
     const tipoMediaSelect = document.getElementById('tipo-media');
     const pesosArea = document.getElementById('pesos-area');
@@ -27,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const formulaDisplay = document.getElementById('formula-display');
     const formulaFeedback = document.getElementById('formula-validation-feedback');
 
-    // Modal Componente
     const modalComponente = document.getElementById('modal-componente');
     const formComponente = document.getElementById('form-componente');
     const modalComponenteTitle = document.getElementById('modal-componente-title');
@@ -37,14 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const siglaComponenteInput = document.getElementById('componente-sigla');
     const descComponenteInput = document.getElementById('componente-desc');
 
-    // Modal Exclusão
     const modalExclusao = document.getElementById('modal-confirmar-exclusao');
     const modalExclusaoMsg = document.getElementById('modal-exclusao-msg');
     const btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao-sim');
     let G_ITEM_PARA_EXCLUIR = null;
 
 
-    // --- FUNÇÕES DE INICIALIZAÇÃO ---
 
     function getUrlParams() {
         const params = new URLSearchParams(window.location.search);
@@ -68,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Atualiza o link de "Voltar"
         linkVoltarDisciplinas.href = `./disciplinas.html?instituicao_id=${G_INSTITUICAO_ID}`;
 
         try {
@@ -83,9 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
-            // Assume que a API de componentes também retorna o nome da disciplina (idealmente)
-            // Se não, teríamos que fazer outro fetch para /api/disciplinas/:id
-            // headerNomeDisciplina.textContent = `Configurar Média: ${data.disciplinaNome || 'Disciplina'}`;
 
             G_COMPONENTES = data.componentes || [];
             G_FORMULA_SALVA = data.formula || '';
@@ -99,10 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUNÇÕES DE RENDERIZAÇÃO ---
 
     function renderComponentesLista() {
-        listaComponentesUI.innerHTML = ''; // Limpa a lista
+        listaComponentesUI.innerHTML = ''; 
         if (G_COMPONENTES.length === 0) {
             emptyComponentesMsg.style.display = 'block';
             return;
@@ -112,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         G_COMPONENTES.forEach(comp => {
             const li = document.createElement('li');
-            li.className = 'componente-item turma-item'; // Reusa estilo
+            li.className = 'componente-item turma-item'; 
             li.innerHTML = `
                 <div class="componente-info">
                     <strong>${comp.nome} (Sigla: ${comp.sigla})</strong>
@@ -140,10 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderFormulaUI() {
         formulaDisplay.textContent = G_FORMULA_SALVA || 'Nenhuma fórmula configurada.';
         
-        // Popula os inputs de peso se for 'ponderada'
         if (tipoMediaSelect.value === 'ponderada') {
             pesosArea.style.display = 'block';
-            pesosInputsContainer.innerHTML = ''; // Limpa
+            pesosInputsContainer.innerHTML = '';
 
             if (G_COMPONENTES.length === 0) {
                  pesosInputsContainer.innerHTML = '<p class="form-hint">Adicione componentes primeiro.</p>';
@@ -193,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         siglasNaFormula.forEach(sigla => {
-            if (!siglasCadastradas.has(sigla) && isNaN(sigla)) { // Ignora números
+            if (!siglasCadastradas.has(sigla) && isNaN(sigla)) { 
                  feedback += `❌ A sigla '${sigla}' está na fórmula mas não foi cadastrada.\n`;
             }
         });
@@ -206,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- MODAL DE COMPONENTE (ADICIONAR/EDITAR) ---
 
     function abrirModalComponente(modo, data = null) {
         formComponente.reset();
@@ -268,14 +253,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert(`Componente ${isEditMode ? 'atualizado' : 'criado'}!`);
             fecharModalComponente();
-            loadDadosDisciplina(); // Recarrega tudo
-
+            loadDadosDisciplina();
         } catch (err) {
             alert(`Erro: ${err.message}`);
         }
     }
 
-    // --- MODAL DE EXCLUSÃO ---
 
     function abrirModalExclusao(id, nome) {
         G_ITEM_PARA_EXCLUIR = { id, nome };
@@ -309,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             alert(`Componente "${nome}" excluído com sucesso.`);
-            loadDadosDisciplina(); // Recarrega tudo
+            loadDadosDisciplina();
 
         } catch (err) {
             alert(`Erro: ${err.message}`);
@@ -320,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- LÓGICA DE SALVAR A FÓRMULA ---
 
     async function salvarFormula(e) {
         e.preventDefault();
@@ -346,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Usa a função importada
             formulaFinal = generateFormula(siglas, tipoMedia, pesos);
 
         } catch (error) {
@@ -354,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Salva a fórmula no backend
         try {
             const response = await fetch(`/api/disciplinas/${G_DISCIPLINA_ID}/formula`, {
                 method: 'PUT',
@@ -368,20 +348,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             alert('Fórmula salva com sucesso!');
-            G_FORMULA_SALVA = formulaFinal; // Atualiza o estado local
-            renderFormulaUI(); // Re-renderiza a UI da fórmula
-
+            G_FORMULA_SALVA = formulaFinal; 
         } catch (err) {
             alert(`Erro ao salvar fórmula: ${err.message}`);
         }
     }
 
-    // --- EVENT LISTENERS ---
 
-    // Botão "Adicionar Componente"
     btnAddComponete.addEventListener('click', () => abrirModalComponente('criar'));
 
-    // Botões "Editar" e "Remover" na lista (delegação)
     listaComponentesUI.addEventListener('click', (e) => {
         const btnEdit = e.target.closest('.btn-edit-componente');
         if (btnEdit) {
@@ -396,14 +371,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Submissão dos formulários
     formComponente.addEventListener('submit', salvarComponente);
     formFormula.addEventListener('submit', salvarFormula);
 
-    // Mudança no tipo de média (Simples/Ponderada)
     tipoMediaSelect.addEventListener('change', renderFormulaUI);
 
-    // Fechar Modais
     modalComponente.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
         btn.addEventListener('click', fecharModalComponente);
     });
@@ -411,10 +383,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', fecharModalExclusao);
     });
 
-    // Botão de confirmação de exclusão
     btnConfirmarExclusao.addEventListener('click', executarExclusao);
 
-    // --- INÍCIO ---
     getUrlParams();
     loadDadosDisciplina();
 });

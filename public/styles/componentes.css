@@ -1,4 +1,3 @@
-/* (o conteúdo existente de componentes.css pode ser mantido ou removido) */
 
 .page-header {
     display: flex;
@@ -12,7 +11,7 @@
 
 .layout-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Dividido em 2 colunas */
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
 }
 
@@ -27,14 +26,12 @@
     margin: 0;
 }
 
-/* Estilo para a lista de componentes (reutilizando .turma-item) */
 #componentes-lista {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-/* Herda de .turma-item de disciplinas.css */
 .componente-item { 
     display: flex;
     justify-content: space-between;
@@ -72,7 +69,6 @@
     flex-shrink: 0; 
 }
 
-/* Estilos para a área de pesos */
 #pesos-inputs-container .input-group {
     flex-direction: row;
     align-items: center;

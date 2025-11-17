@@ -74,6 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
+            if (data.nome && headerNomeDisciplina) {
+                headerNomeDisciplina.textContent = `Configurar Média: ${data.nome}`;
+            }
 
             G_COMPONENTES = data.componentes || [];
             G_FORMULA_SALVA = data.formula || '';

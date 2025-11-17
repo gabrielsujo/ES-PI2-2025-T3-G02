@@ -16,7 +16,7 @@ router.get('/disciplinas/:disciplina_id/componentes', authenticateToken, async(r
     try {
         // verificar se a disciplina pertence ao utilizador
         const disciplinaCheck = await pool.query(
-            `SELECT d.id, d.formula_calculo FROM disciplinas d
+            `SELECT d.id, d.formula_calculo, d.nome FROM disciplinas d
             JOIN instituicoes i ON d.instituicao_id = i.id
             WHERE d.id = $1 AND i.usuario_id = $2`,
             [disciplina_id, usuarioId]
@@ -32,6 +32,7 @@ router.get('/disciplinas/:disciplina_id/componentes', authenticateToken, async(r
 
         //enviar a formula e os componentes
         res.status(200).json({
+            nome: disciplinaCheck.rows[0].nome,
             formula: disciplinaCheck.rows[0].formula_calculo || '', //envia a formula
             componentes: componentesResult.rows //envia a lista dos componentes
         });

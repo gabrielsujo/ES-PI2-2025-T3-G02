@@ -9,8 +9,9 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Regex para validar matrícula (apenas números)
+// Regex para validações
 const matriculaRegex = /^[0-9]+$/;
+const nomeRegex = /^[^0-9]*$/; // Permite letras, espaços, acentos, mas não números
 
 router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
@@ -56,9 +57,12 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         return res.status(400).json({ error: 'Matrícula, nome e ID da turma são obrigatórios.' });
     }
 
-    // Validação de Matrícula (Apenas Números)
     if (!matriculaRegex.test(matricula)) {
         return res.status(400).json({ error: 'A matrícula deve conter apenas números.' });
+    }
+    
+    if (!nomeRegex.test(nome)) {
+        return res.status(400).json({ error: 'O nome não pode conter números.' });
     }
 
     try {
@@ -118,6 +122,10 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
         return res.status(400).json({ error: 'A matrícula deve conter apenas números.' });
     }
 
+    if (!nomeRegex.test(nome)) {
+        return res.status(400).json({ error: 'O nome não pode conter números.' });
+    }
+
     try {
         const alunoCheck = await pool.query(
             `SELECT a.id FROM alunos a
@@ -160,14 +168,15 @@ router.post(
 
     if (!req.file) {
         return res.status(400).json({ error: 'Nenhum arquivo CSV enviado.'});
-
     }
+    
     try {
         const turmaCheck = await pool.query(
             `SELECT t.id FROM turmas t
             JOIN disciplinas d ON t.disciplina_id = d.id
             JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE t.id = $1 AND i.usuario_id = $2`
+            WHERE t.id = $1 AND i.usuario_id = $2`,
+            [turma_id, usuarioId]
         );
         if (turmaCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Ação não autorizada.' });
@@ -190,13 +199,13 @@ router.post(
             bufferStream
             .pipe(csvParser({
                 headers: ['matricula', 'nome'],
-                skipLines: 1
+                skipLines: 1 
             }))
             .on('data', (row) => {
                 const matricula = row.matricula?.trim();
                 const nome = row.nome?.trim();
                 
-                if (matricula && nome && matriculaRegex.test(matricula) && !matriculaExistentes.has(matricula)) {
+                if (matricula && nome && matriculaRegex.test(matricula) && nomeRegex.test(nome) && !matriculaExistentes.has(matricula)) {
                     matriculaExistentes.add(matricula);
                     alunosParaAdicionar.push({ matricula, nome });
                 } else if (matricula || nome) {
@@ -228,7 +237,7 @@ router.post(
         
         let message = `${alunosParaAdicionar.length} alunos importados com sucesso.`;
         if (linhasInvalidas > 0) {
-            message += ` ${linhasInvalidas} linhas foram ignoradas (matrícula duplicada, inválida ou dados em falta).`;
+            message += ` ${linhasInvalidas} linhas foram ignoradas (matrícula/nome inválido, duplicado, ou dados em falta).`;
         }
 
         res.status(201).json({
@@ -241,9 +250,6 @@ router.post(
         res.status(500).json({ error: 'Erro interno de servidor ao processar o CSV' });
     }
 });
-
-// --- INÍCIO DA CORREÇÃO ---
-// Rota de Lote (batch) colocada ANTES da rota individual (/:id)
 
 router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
     const { ids } = req.body; 
@@ -263,7 +269,6 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
     try{
         await client.query('BEGIN');
         
-        // CORREÇÃO DO ERRO DE DIGITAÇÃO: d.instituicao_id
         const checkQuery = await client.query(
             `SELECT a.id FROM alunos a
             JOIN turmas t ON a.turma_id = t.id
@@ -299,7 +304,6 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
     }
 });
 
-// Rota Individual (/:id) colocada DEPOIS da rota de lote (/batch)
 router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     const { id } = req.params;
     const usuarioId = req.userId;
@@ -327,13 +331,11 @@ router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => 
         res.status(200).json({ message: 'Aluno removido com sucesso.' });
     } catch(err) {
         console.error(err);
-        // CORREÇÃO DO TRATAMENTO DE ERRO:
         if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
             return res.status(400).json({ error: 'Não é possível remover. Verifique se existem notas associadas.' });
         }
         res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 });
-// --- FIM DA CORREÇÃO ---
 
 export default router;

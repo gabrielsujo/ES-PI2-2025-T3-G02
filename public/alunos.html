@@ -12,7 +12,7 @@
             <h1>Projeto NotaDez</h1>
             <nav>
                 <a href="./dashboard.html" class="btn-secondary-nav">Minhas Instituições</a>
-                <a href="./disciplinas.html" class="btn-secondary-nav">Disciplinas</a> 
+                <a href="#" id="breadcrumb-disciplinas" class="btn-secondary-nav">Disciplinas</a> 
             </nav>
         </div>
     </header>
@@ -67,7 +67,7 @@
                 </div>
                 <div class="input-group">
                     <label for="aluno-nome">NOME COMPLETO</label>
-                    <input type="text" id="aluno-nome" name="nome" required>
+                    <input type="text" id="aluno-nome" name="nome" required pattern="[^0-9]*" title="O nome não pode conter números.">
                 </div>
                 
                 <div class="modal-actions">

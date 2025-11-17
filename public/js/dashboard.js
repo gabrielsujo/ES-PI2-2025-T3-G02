@@ -82,21 +82,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3>${inst.nome}</h3>
                 ${subtitleHtml} 
             </div>
-            <div class="card-actions card-actions-multi">
-                <button class="btn-danger-outline btn-excluir" 
-                        data-id="${inst.id}" 
-                        data-nome="${inst.nome}" 
-                        data-tipo="instituicao">
-                    Remover
-                </button>
+            <div class="card-actions card-actions-multi d-flex justify-content-between align-items-center">
                 
-                <button class="btn-secondary btn-editar" data-id="${inst.id}" data-nome="${inst.nome}">
-                    Editar
-                </button>
-                
-                <a href="/disciplinas.html?instituicao_id=${inst.id}" class="btn-secondary">
+                <a href="/disciplinas.html?instituicao_id=${inst.id}" class="btn-primary-main">
                     Gerenciar Disciplinas
                 </a>
+                
+                <div class="btn-small-group d-flex align-items-center">
+                    <button class="btn-secondary btn-editar btn-sm me-2" 
+                            data-id="${inst.id}" 
+                            data-nome="${inst.nome}">
+                        Editar
+                    </button>
+                    
+                    <button class="btn-danger-outline btn-excluir btn-sm" 
+                            data-id="${inst.id}" 
+                            data-nome="${inst.nome}" 
+                            data-tipo="instituicao">
+                        Remover
+                    </button>
+                </div>
             </div>
         `;
         return article;

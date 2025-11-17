@@ -388,7 +388,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
     
-    // Se tiver o ID da turma e a tabela existir, carrega os alunos quando a página abre
     if (turmaId && tabelaBody) {
         loadAlunos();
     }

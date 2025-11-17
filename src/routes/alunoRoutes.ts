@@ -9,10 +9,6 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Regex para validações
-const matriculaRegex = /^[0-9]+$/;
-const nomeRegex = /^[^0-9]*$/; // Permite letras, espaços, acentos, mas não números
-
 router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
     const usuarioId = req.userId;
@@ -57,14 +53,6 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         return res.status(400).json({ error: 'Matrícula, nome e ID da turma são obrigatórios.' });
     }
 
-    if (!matriculaRegex.test(matricula)) {
-        return res.status(400).json({ error: 'A matrícula deve conter apenas números.' });
-    }
-    
-    if (!nomeRegex.test(nome)) {
-        return res.status(400).json({ error: 'O nome não pode conter números.' });
-    }
-
     try {
         const turmaCheck = await pool.query(
             `SELECT t.id FROM turmas t
@@ -76,7 +64,7 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         if(turmaCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Ação não autorizada.'});
         }
-        
+
         const matriculaCheck = await pool.query(
             'SELECT id FROM alunos WHERE matricula = $1 AND turma_id = $2',
             [matricula, turma_id]
@@ -116,14 +104,6 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     
     if(!matricula || !nome) {
         return res.status(400).json({ error: 'Matrícula e nome são obrigatórios. '});
-    }
-
-    if (!matriculaRegex.test(matricula)) {
-        return res.status(400).json({ error: 'A matrícula deve conter apenas números.' });
-    }
-
-    if (!nomeRegex.test(nome)) {
-        return res.status(400).json({ error: 'O nome não pode conter números.' });
     }
 
     try {
@@ -198,13 +178,17 @@ router.post(
         await new Promise<void>((resolve, reject) => {
             bufferStream
             .pipe(csvParser({
-                headers: ['matricula', 'nome'],
+                mapHeaders: ({ header }) => header.toLowerCase(),
+                separator: ';',
                 skipLines: 1 
             }))
             .on('data', (row) => {
                 const matricula = row.matricula?.trim();
                 const nome = row.nome?.trim();
                 
+                const matriculaRegex = /^[0-9]+$/;
+                const nomeRegex = /^[^0-9]*$/;
+
                 if (matricula && nome && matriculaRegex.test(matricula) && nomeRegex.test(nome) && !matriculaExistentes.has(matricula)) {
                     matriculaExistentes.add(matricula);
                     alunosParaAdicionar.push({ matricula, nome });

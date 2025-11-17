@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () =>{
     const btnRemoveSelecionados = document.getElementById('remove-selecionados-btn');
     const selectAllCheckbox = document.getElementById('select-all-alunos');
     const tabelaBody = document.getElementById('alunos-tabela-body'); 
-    const emptyMsg = document.getElementById('empty-state-msg'); // Mensagem se não houver alunos
+    const emptyMsg = document.getElementById('empty-state-msg'); 
 
     // Referências aos formulários
     const formsCsv = document.getElementById('form-csv');
@@ -22,14 +22,12 @@ document.addEventListener('DOMContentLoaded', () =>{
     const urlParams = new URLSearchParams(window.location.search);
     const turmaId = urlParams.get('turma_id');
     
-    // Se não tem ID da turma, avisa e desabilita os botões
     if (!turmaId) {
         console.warn('ID da turma não encontrado na URL. A importação e adição não funcionarão');
         if(btnImportCsv) btnImportCsv.disabled = true;
         if(btnAddAluno) btnAddAluno.disabled = true;
     }
 
-    // --- FUNÇÃO PARA PEGAR OS ALUNOS E COLOCAR NA TELA ---
     async function loadAlunos() {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -37,12 +35,10 @@ document.addEventListener('DOMContentLoaded', () =>{
             return;
         }
 
-        // Limpa a tabela antes de carregar os dados
         tabelaBody.innerHTML = '';
         if (emptyMsg) emptyMsg.style.display = 'none';
 
         try {
-            // Vai na API buscar a lista de alunos desta turma
             const response = await fetch(`/api/turmas/${turmaId}/alunos`, { 
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -55,12 +51,10 @@ document.addEventListener('DOMContentLoaded', () =>{
             const alunos = await response.json();
 
             if (alunos.length === 0) {
-                // Se não tiver aluno, mostra o aviso
                 if (emptyMsg) emptyMsg.style.display = 'block';
                 return;
             }
 
-            // Para cada aluno que voltou da API, a gente cria uma linha na tabela
             alunos.forEach(aluno => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -89,32 +83,25 @@ document.addEventListener('DOMContentLoaded', () =>{
                 tabelaBody.appendChild(tr);
             });
 
-            updateBatchDeleteButton(); // Atualiza o contador de seleção
+            updateBatchDeleteButton(); 
         } catch (err) {
             console.error('Erro ao carregar alunos:', err);
             alert(`Erro ao carregar lista de alunos: ${err.message}`);
         }
     }
-    // --- FIM DA FUNÇÃO DE CARREGAMENTO ---
 
 
-    // ------ ABRIR E FECHAR OS MODAIS ------
-
-    if (btnImportCsv) { // Verifica se o botão existe (boa prática)
+    if (btnImportCsv) { 
         btnImportCsv.addEventListener('click', () => {
             modalCsv.style.display = 'flex';
         });
     }
 
-    // Fecha os modais (botão x ou cancelar)
     document.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Encontra o modal pai mais próximo e esconde ele
             e.target.closest('.modal-overlay').style.display = 'none';
         });
     });
-
-    // ------ IMPORTAÇÃO CSV ------
 
     if (formsCsv && turmaId) {
         formsCsv.addEventListener('submit', async (e) => {
@@ -135,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () =>{
             submitButton.disabled = true;
 
             try {
-                // Manda o arquivo para o servidor
                 const response = await fetch(`/api/turmas/${turmaId}/alunos/import-csv`, {
                     method: 'POST',
                     headers: {
@@ -148,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () =>{
 
                 if (response.ok) {
                     alert(result.message);
-                    window.location.reload(); // Recarrega a página pra ver os alunos novos
+                    window.location.reload(); 
                 } else {
                     alert(` Deu erro: ${result.error}`);
                 }
@@ -161,41 +147,34 @@ document.addEventListener('DOMContentLoaded', () =>{
             }
         });
     }
-    // ------- ADICIONAR E EDITAR ALUNO -------
-
-    // Campos e botões do formulário de aluno
+    
     const modalAlunoTitle = document.getElementById('modal-aluno-title');
     const hiddenAlunoId = document.getElementById('aluno-id-hidden');
     const matriculaInput = document.getElementById('aluno-matricula');
     const nomeInput = document.getElementById('aluno-nome');
     const submitBtnAluno = document.getElementById('modal-aluno-submit-btn');
 
-    // Prepara o modal para criar um aluno
     function abrirModalParaCriar(){
         modalAlunoTitle.textContent = 'Adicionar Novo Aluno';
         submitBtnAluno.textContent = 'Salvar Aluno';
-        hiddenAlunoId.value = ''; // Limpa o ID para saber que é uma criação
+        hiddenAlunoId.value = ''; 
         if(formAluno) formAluno.reset();
         modalAluno.style.display = 'flex';
         matriculaInput.focus();
     }
 
-    // Prepara o modal para editar um aluno
     function abrirModalParaEditar(id, matricula, nome) {
         modalAlunoTitle.textContent = 'Editar Aluno';
         submitBtnAluno.textContent = 'Atualizar Aluno';
-        hiddenAlunoId.value = id // Coloca o ID do aluno que está sendo editado
-        matriculaInput.value = matricula; // Preenche a matrícula
-        nomeInput.value = nome; // Preenche o nome
+        hiddenAlunoId.value = id 
+        matriculaInput.value = matricula; 
+        nomeInput.value = nome; 
         modalAluno.style.display = 'flex';
         matriculaInput.focus();
     }
     
     if(btnAddAluno) btnAddAluno.addEventListener('click', abrirModalParaCriar);
-
-    // --- LÓGICA DE SELEÇÃO E REMOÇÃO MÚLTIPLA ---
     
-    // Verifica quantos alunos estão selecionados e atualiza o botão de remoção
     function updateBatchDeleteButton() {
         if (!tabelaBody || !btnRemoveSelecionados) return;
         
@@ -203,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         btnRemoveSelecionados.disabled = checkboxes.length === 0;
         btnRemoveSelecionados.textContent = `Remover Selecionados (${checkboxes.length})`;
         
-        // Se todos estiverem marcados, marca o "Selecionar Todos"
         if (selectAllCheckbox) {
             const allCheckboxes = tabelaBody.querySelectorAll('input[name="alunoSelecionado"]');
             const allChecked = allCheckboxes.length > 0 && checkboxes.length === allCheckboxes.length;
@@ -213,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         }
     }
     
-    // Ao clicar no "Selecionar Todos"
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', () => {
             const isChecked = selectAllCheckbox.checked;
@@ -226,19 +203,16 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
 
-    // Ao clicar em qualquer checkbox individualmente
     if (tabelaBody) {
         tabelaBody.addEventListener('change', (e) => {
             if (e.target.name === 'alunoSelecionado') {
                 updateBatchDeleteButton();
             }
         });
-        
-         // Chama a função uma vez no início pra acertar o estado do botão
+         
          updateBatchDeleteButton(); 
     }
 
-    // Lógica para remover múltiplos alunos de uma vez
     if (btnRemoveSelecionados) {
         btnRemoveSelecionados.addEventListener('click', async () => {
             if (!tabelaBody) return;
@@ -256,12 +230,15 @@ document.addEventListener('DOMContentLoaded', () =>{
 
             if (!confirmacao) return;
 
-            submitButton.textContent = 'Removendo...';
+            // --- INÍCIO DA CORREÇÃO ---
+            // A variável 'submitButton' não existe neste escopo.
+            // Devemos usar 'btnRemoveSelecionados'.
+            btnRemoveSelecionados.textContent = 'Removendo...';
+            // --- FIM DA CORREÇÃO ---
             btnRemoveSelecionados.disabled = true;
             
 
             try {
-                // Chama a API de exclusão em lote
                 const response = await fetch('/api/alunos/batch', {
                     method: 'DELETE',
                     headers: {
@@ -275,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () =>{
 
                 if (response.ok) {
                     alert(result.message);
-                    window.location.reload(); // Recarrega a página para sumir com os alunos removidos
+                    window.location.reload(); 
                 } else {
                     alert(`Erro na remoção: ${result.error || 'Não foi possível remover. Cheque se não tem notas associadas.'}`);
                 }
@@ -289,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
 
-    // Lida com o clique nos botões "Editar" na tabela (usa delegação)
     if (tabelaBody) {
         tabelaBody.addEventListener('click', (e) => {
             const editButton = e.target.closest('.btn-edit');
@@ -298,7 +274,6 @@ document.addEventListener('DOMContentLoaded', () =>{
             e.preventDefault();
 
             const tr = editButton.closest('tr');
-            // Pega os dados da linha para preencher o modal
             const id = tr.querySelector('.btn-excluir')?.dataset.id;
             const matricula = tr.querySelector('[data-field="matricula"]')?.textContent;
             const nome = tr.querySelector('[data-field="nome"]')?.textContent;
@@ -311,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
 
-    // Lida com o envio do formulário (Criar ou Editar aluno)
     if (formAluno) {
         formAluno.addEventListener('submit', async(e) => {
             e.preventDefault();
@@ -327,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () =>{
             }
 
             const isEditMode = id !== '';
-            // Decide se é PUT (editar) ou POST (criar)
             const url = isEditMode ? `/api/alunos/${id}` : '/api/alunos';
             const method = isEditMode ? 'PUT' : 'POST';
 
@@ -356,9 +329,8 @@ document.addEventListener('DOMContentLoaded', () =>{
                     alert(isEditMode ? 'Aluno atualizado!' : 'Aluno criado!');
                     modalAluno.style.display = 'none';
                     formAluno.reset();
-                    window.location.reload(); // Recarrega para mostrar os dados novos
+                    window.location.reload(); 
                 } else {
-                    // Trata o erro de matrícula duplicada (status 409)
                     if(response.status === 409) {
                         alert(`Erro: ${result.error}`);
                     } else {
@@ -375,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () =>{
         });
     }
     
-    // Se tiver o ID da turma e a tabela existir, carrega os alunos quando a página abre
     if (turmaId && tabelaBody) {
         loadAlunos();
     }

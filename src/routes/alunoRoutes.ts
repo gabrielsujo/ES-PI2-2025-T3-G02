@@ -9,6 +9,9 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Regex para validar matrícula (apenas números)
+const matriculaRegex = /^[0-9]+$/;
+
 router.get('/turmas/:turma_id/alunos', authenticateToken, async (req: AuthRequest, res) => {
     const { turma_id } = req.params;
     const usuarioId = req.userId;
@@ -53,6 +56,11 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         return res.status(400).json({ error: 'Matrícula, nome e ID da turma são obrigatórios.' });
     }
 
+    // Validação de Matrícula (Apenas Números)
+    if (!matriculaRegex.test(matricula)) {
+        return res.status(400).json({ error: 'A matrícula deve conter apenas números.' });
+    }
+
     try {
         const turmaCheck = await pool.query(
             `SELECT t.id FROM turmas t
@@ -63,6 +71,15 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         );
         if(turmaCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Ação não autorizada.'});
+        }
+        
+        const matriculaCheck = await pool.query(
+            'SELECT id FROM alunos WHERE matricula = $1 AND turma_id = $2',
+            [matricula, turma_id]
+        );
+
+        if (matriculaCheck.rows.length > 0) {
+            return res.status(409).json({ error: 'Esta matrícula já está cadastrada nesta turma.' });
         }
 
         const novoAluno = await pool.query(
@@ -76,7 +93,7 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         
         if (err && typeof err === 'object' && 'code' in err) {
             if (err.code === '23505') { 
-                return res.status(409).json({ error: 'Matrícula já cadastrada.' });
+                return res.status(409).json({ error: 'Matrícula já cadastrada nesta turma.' });
             }
         }
 
@@ -95,6 +112,10 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     
     if(!matricula || !nome) {
         return res.status(400).json({ error: 'Matrícula e nome são obrigatórios. '});
+    }
+
+    if (!matriculaRegex.test(matricula)) {
+        return res.status(400).json({ error: 'A matrícula deve conter apenas números.' });
     }
 
     try {
@@ -119,44 +140,17 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
         res.status(200).json(alunoAtualizado.rows[0]);
     } catch(err) {
         console.error(err);
+        if (err && typeof err === 'object' && 'code' in err) {
+            if (err.code === '23505') { 
+                return res.status(409).json({ error: 'Esta matrícula já pertence a outro aluno nesta turma.' });
+            }
+        }
         res.status(500).json({ error: 'Erro interno do servidor'});
     }
 });
 
-router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
-    const { id } = req.params;
-    const usuarioId = req.userId;
-
-    if (!usuarioId) {
-        return res.status(403).json({ error: 'Autorização necessária.'});
-    }
-
-
-    try {
-        const alunoCheck = await pool.query(
-            `SELECT a.id FROM alunos a
-            JOIN turmas t ON a.turma_id = t.id
-            JOIN disciplinas d ON t.disciplina_id = d.id
-            JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE a.id = $1 AND i.usuario_id = $2`,
-            [id, usuarioId]
-        );
-
-        if(alunoCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Aluno não encontrado ou não autorizado.'});
-        }
-
-        await pool.query('DELETE FROM alunos WHERE id = $1', [id]);
-
-        res.status(200).json({ message: 'Aluno removido com sucesso.' });
-    } catch(err) {
-        console.error(err);
-        res.status(500).json({ error: 'Erro interno do servidor. Verifique se existem notas associadas.' });
-    }
-});
-
 router.post(
-    '/turmas/:turma_id/alunos/import_csv',
+    '/turmas/:turma_id/alunos/import-csv',
     authenticateToken,
     upload.single('csvFile'),
     async (req: AuthRequest, res) => {
@@ -186,6 +180,7 @@ router.post(
         const matriculaExistentes = new Set(existentesResult.rows.map(r => r.matricula));
 
         const alunosParaAdicionar: { matricula: string, nome: string } [] = [];
+        let linhasInvalidas = 0;
 
         const bufferStream = new Readable();
         bufferStream.push(req.file.buffer);
@@ -201,9 +196,11 @@ router.post(
                 const matricula = row.matricula?.trim();
                 const nome = row.nome?.trim();
                 
-                if (matricula && nome && !matriculaExistentes.has(matricula)) {
+                if (matricula && nome && matriculaRegex.test(matricula) && !matriculaExistentes.has(matricula)) {
                     matriculaExistentes.add(matricula);
                     alunosParaAdicionar.push({ matricula, nome });
+                } else if (matricula || nome) {
+                    linhasInvalidas++;
                 }
             })
             .on('end', resolve)
@@ -228,9 +225,14 @@ router.post(
                 client.release();
             }
         }
+        
+        let message = `${alunosParaAdicionar.length} alunos importados com sucesso.`;
+        if (linhasInvalidas > 0) {
+            message += ` ${linhasInvalidas} linhas foram ignoradas (matrícula duplicada, inválida ou dados em falta).`;
+        }
 
         res.status(201).json({
-            message: `${alunosParaAdicionar.length} alunos importados com sucesso.`,
+            message: message,
             importados: alunosParaAdicionar.length
         });
 
@@ -240,16 +242,17 @@ router.post(
     }
 });
 
-//Rota: deletar multiplos alunos
+// --- INÍCIO DA CORREÇÃO ---
+// Rota de Lote (batch) colocada ANTES da rota individual (/:id)
+
 router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
-    const { ids } = req.body; // esperando um array
+    const { ids } = req.body; 
     const usuarioId = req.userId;
 
     if (!Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ error: 'Array de IDs inválido ou vazio.' });
     }
 
-    //garante que todos os IDs são mumeros inteiros
     const alunosIds = ids.map(id => parseInt(id,10)).filter(id => !isNaN(id));
 
     if (alunosIds.length === 0) {
@@ -260,9 +263,7 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
     try{
         await client.query('BEGIN');
         
-        //verificar permissão:
-        //garante que TODOS os IDs de alunos que o usuario está tentando apagar
-        // realmente pertencem a ele.
+        // CORREÇÃO DO ERRO DE DIGITAÇÃO: d.instituicao_id
         const checkQuery = await client.query(
             `SELECT a.id FROM alunos a
             JOIN turmas t ON a.turma_id = t.id
@@ -272,15 +273,11 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
             [usuarioId, alunosIds]
         );
 
-        // Compara o numero de IDs que o usuario pediu para apagar
-        // com o numero de IDs que ele realmente tem permissão para apagar
         if (checkQuery.rows.length !== alunosIds.length) {
             await client.query('ROLLBACK');
             return res.status(403).json({ error: 'Acão não autorizada. Alguns alunos não pertencem a este usúario ou não foram encontrados.' });
         }
 
-        //apagar
-        //se a verificação passou. apaga todos os alunos de uma vez
         await client.query(
             'DELETE FROM alunos WHERE id = ANY($1::int[])',
             [alunosIds]
@@ -293,7 +290,6 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
         await client.query('ROLLBACK');
         console.error(err);
 
-        //trata oerro de dependêcia (ex: aluno com notas)
         if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
             return res.status(400).json({ error: 'Não é possível remover. Verificar se os alunos possuem notas associadas.' });
         }
@@ -302,5 +298,42 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
         client.release();
     }
 });
+
+// Rota Individual (/:id) colocada DEPOIS da rota de lote (/batch)
+router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
+    const { id } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
+
+    try {
+        const alunoCheck = await pool.query(
+            `SELECT a.id FROM alunos a
+            JOIN turmas t ON a.turma_id = t.id
+            JOIN disciplinas d ON t.disciplina_id = d.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
+            WHERE a.id = $1 AND i.usuario_id = $2`,
+            [id, usuarioId]
+        );
+
+        if(alunoCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Aluno não encontrado ou não autorizado.'});
+        }
+
+        await pool.query('DELETE FROM alunos WHERE id = $1', [id]);
+
+        res.status(200).json({ message: 'Aluno removido com sucesso.' });
+    } catch(err) {
+        console.error(err);
+        // CORREÇÃO DO TRATAMENTO DE ERRO:
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
+            return res.status(400).json({ error: 'Não é possível remover. Verifique se existem notas associadas.' });
+        }
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+});
+// --- FIM DA CORREÇÃO ---
 
 export default router;

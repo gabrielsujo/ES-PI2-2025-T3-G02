@@ -63,7 +63,7 @@
                 <input type="hidden" id="aluno-id-hidden">
                 <div class="input-group">
                     <label for="aluno-matricula">MATRÍCULA</label>
-                    <input type="text" id="aluno-matricula" name="matricula" required>
+                    <input type="text" id="aluno-matricula" name="matricula" required pattern="[0-9]*" inputmode="numeric" title="A matrícula deve conter apenas números.">
                 </div>
                 <div class="input-group">
                     <label for="aluno-nome">NOME COMPLETO</label>
@@ -115,6 +115,7 @@
     </div>
     
     <script src="./js/delete-manager.js"></script>
-    <script src="./js/alunos.js"></script> </body>
+    <script src="./js/alunos.js"></script> 
+</body>
 
 </html>

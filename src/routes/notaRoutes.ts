@@ -154,8 +154,6 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
              return res.status(400).json({ error: 'Não há componentes cadastrados para exportar.' })
         }
 
-        // --- início da correção ---
-        // busca notas. o erro estava em 'n.alunos_id'
         const notasResult = await pool.query(
             `SELECT n.aluno_id, n.componente_id, n.valor
             FROM notas n
@@ -163,7 +161,6 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
             WHERE a.turma_id = $1`,
             [turma_id]
         );
-        // --- fim da correção ---
         
         //mapeia as notas para facilitar acesso
         const notasMap = new Map<number, Map<number, number | null>>();
@@ -217,17 +214,22 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
         
         //gerar o CSV e o nome do arquivo
         const csvString = Papa.unparse(dataParaCsv, { columns: headers, delimiter: ";"});
-        //timestamp no formato YYYY-MM-DD_hhmmssms
+        
         const now = new Date();
-        const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-        const time = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}${now.getMilliseconds().toString().padStart(3, '0')}`;
-        const timestamp = `${date}_${time}`;
+        const YYYY = now.getFullYear();
+        const MM = String(now.getMonth() + 1).padStart(2, '0');
+        const DD = String(now.getDate()).padStart(2, '0');
+        const HH = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const ms = String(now.getMilliseconds()).padStart(3, '0');
+        const timestamp = `${YYYY}-${MM}-${DD}_${HH}${mm}${ss}${ms}`;
 
-        //limpar o nome da turma
-        const turmaNomeSimples = turma_nome.replace(/ /g, '');
-        //pegar a sigla da disciplina
-        const sigla = disciplina_sigla || 'DISC';
-        const fileName = `${timestamp}-${turmaNomeSimples}_${sigla}.csv`;
+        const turmaNomeClean = turma_nome.replace(/ /g, '');
+        const disciplinaSiglaClean = disciplina_sigla.replace(/ /g, '');
+
+        const fileName = `${timestamp}-${turmaNomeClean}_${disciplinaSiglaClean}.csv`;
+
         // enviar o arquivo como resposta
         res.setHeader('Content-type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);

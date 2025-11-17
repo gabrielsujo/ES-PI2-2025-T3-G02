@@ -62,11 +62,11 @@
             <form id="form-aluno">
                 <input type="hidden" id="aluno-id-hidden">
                 <div class="input-group">
-                    <label for="aluno-matricula">MATRÍCULA</label>
+                    <label for="aluno-matricula">MATRÍCULA<span style="color:red;">*</span></label>
                     <input type="text" id="aluno-matricula" name="matricula" required pattern="[0-9]*" inputmode="numeric" title="A matrícula deve conter apenas números.">
                 </div>
                 <div class="input-group">
-                    <label for="aluno-nome">NOME COMPLETO</label>
+                    <label for="aluno-nome">NOME COMPLETO<span style="color:red;">*</span></label>
                     <input type="text" id="aluno-nome" name="nome" required pattern="[^0-9]*" title="O nome não pode conter números.">
                 </div>
                 

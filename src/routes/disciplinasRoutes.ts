@@ -15,12 +15,14 @@ router.get('/instituicoes/:instituicao_id/disciplinas', authenticateToken, async
 
     try {
         const instituicaoCheck = await pool.query(
-            'SELECT id FROM instituicoes WHERE id = $1 AND usuario_id = $2',
+            'SELECT id, nome FROM instituicoes WHERE id = $1 AND usuario_id = $2',
             [instituicao_id, usuarioId]
         );
         if (instituicaoCheck.rows.length === 0) {
             return res.status(401).json({ error: 'Instituição não encontrada ou não autorizada.'});
         }
+
+        const instituicaoNome = instituicaoCheck.rows[0].nome;
 
         const disciplinasResult = await pool.query(
             'SELECT * FROM disciplinas WHERE instituicao_id = $1 ORDER BY nome',
@@ -36,7 +38,13 @@ router.get('/instituicoes/:instituicao_id/disciplinas', authenticateToken, async
             disciplina.turmas = turmasResults.rows;
         }
 
-        res.status(200).json(disciplinas);
+        res.status(200).json({
+            instituicao: {
+                id: instituicaoCheck.rows[0].id,
+                nome: instituicaoNome
+            },
+            disciplinas: disciplinas
+        });
     } catch (err){
         console.error(err);
         res.status(500).json({ error: 'Erro interno do servidor. '});

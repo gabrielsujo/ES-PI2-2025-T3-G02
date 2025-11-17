@@ -26,6 +26,15 @@ router.post('/register', async (req: Request, res: Response) => {
         if (userExists.rows.length > 0) {
             return res.status(409).json({ error: 'Este email já está cadastrado.'});
         }
+                 /// verificar telefone ///
+        if (telefone) {
+            const telefoneExists = await pool.query('SELECT * FROM Professores WHERE telefone = $1', [telefone]);
+            
+            if (telefoneExists.rows.length > 0) {
+                return res.status(409).json({ error: 'Este número de telefone já está em uso por outra conta.' });
+            }
+        }
+        
 
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);

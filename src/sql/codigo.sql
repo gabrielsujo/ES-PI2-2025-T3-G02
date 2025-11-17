@@ -1,7 +1,7 @@
 CREATE TABLE Professores (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
-    telefone VARCHAR(20),
+    telefone VARCHAR(20) UNIQUE,
     email VARCHAR(255) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL
 );
@@ -125,4 +125,5 @@ CREATE TRIGGER TRG_AUDITORIA_NOTAS
     AFTER INSERT OR UPDATE ON Notas
     FOR EACH ROW
     EXECUTE FUNCTION func_auditoria_notas();
+
 

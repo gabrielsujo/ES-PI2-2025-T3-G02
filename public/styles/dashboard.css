@@ -28,7 +28,6 @@ body {
     padding-bottom: 2rem;
 }
 
-/* --- Botões --- */
 .btn-primary {
     background-color: var(--primary-blue);
     color: var(--text-button);
@@ -317,10 +316,12 @@ main.container {
     text-transform: uppercase;
 }
 
+
 .input-group input[type="text"],
 .input-group input[type="number"],
 .input-group input[type="password"],
-.input-group input[type="email"] {
+.input-group input[type="email"],
+.input-group select {
     background-color: var(--background-container);
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -330,15 +331,28 @@ main.container {
     outline: none;
     transition: box-shadow 0.2s ease-in-out;
     width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.input-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem;
 }
 
 .input-group input[type="text"]:focus,
 .input-group input[type="number"]:focus,
 .input-group input[type="password"]:focus,
-.input-group input[type="email"]:focus {
+.input-group input[type="email"]:focus,
+.input-group select:focus {
     box-shadow: 0 0 0 2px var(--primary-blue);
     border-color: var(--primary-blue);
 }
+
 
 .input-group input[type="file"] {
     font-size: 0.9rem;

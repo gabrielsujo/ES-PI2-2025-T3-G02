@@ -1,239 +1,390 @@
-import { generateFormula } from '../../src/utils/GerarFormula.js';
+import { generateFormula } from '/utils/GerarFormula.js'; 
 
-// ELEMENTOS DOM 
-const form = document.getElementById('form-formula-config');
-const numProvasInput = document.getElementById('num-provas');
-const tipoMediaSelect = document.getElementById('tipo-media');
-const pesosArea = document.getElementById('pesos-area');
-const pesosInputsContainer = document.getElementById('pesos-inputs-container');
-const formulaDisplay = document.getElementById('formula-display');
-const componentesDisplay = document.getElementById('componentes-ativos-display');
+document.addEventListener('DOMContentLoaded', () => {
+
+    let G_COMPONENTES = [];
+    let G_FORMULA_SALVA = '';
+    let G_DISCIPLINA_ID = null;
+    let G_INSTITUICAO_ID = null;
+    let G_EDITANDO_COMPONENTE_ID = null;
+
+    const headerNomeDisciplina = document.getElementById('disciplina-nome-header');
+    const linkVoltarDisciplinas = document.getElementById('back-to-disciplinas');
+
+    const listaComponentesUI = document.getElementById('componentes-lista');
+    const emptyComponentesMsg = document.getElementById('empty-componentes-msg');
+    const btnAddComponete = document.getElementById('add-componente-btn');
+
+    const formFormula = document.getElementById('form-formula-config');
+    const tipoMediaSelect = document.getElementById('tipo-media');
+    const pesosArea = document.getElementById('pesos-area');
+    const pesosInputsContainer = document.getElementById('pesos-inputs-container');
+    const formulaDisplay = document.getElementById('formula-display');
+    const formulaFeedback = document.getElementById('formula-validation-feedback');
+
+    const modalComponente = document.getElementById('modal-componente');
+    const formComponente = document.getElementById('form-componente');
+    const modalComponenteTitle = document.getElementById('modal-componente-title');
+    const modalComponenteSubmit = document.getElementById('modal-componente-submit');
+    const hiddenComponenteId = document.getElementById('componente-id-hidden');
+    const nomeComponenteInput = document.getElementById('componente-nome');
+    const siglaComponenteInput = document.getElementById('componente-sigla');
+    const descComponenteInput = document.getElementById('componente-desc');
+
+    const modalExclusao = document.getElementById('modal-confirmar-exclusao');
+    const modalExclusaoMsg = document.getElementById('modal-exclusao-msg');
+    const btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao-sim');
+    let G_ITEM_PARA_EXCLUIR = null;
 
 
-// A sigla básica para os componentes (P1, P2, P3...)
-const SIGLA_BASE = 'P'; 
-// Chave no localStorage para salvar a configuração
-const STORAGE_KEY = 'disciplinaConfig'; 
 
-
-
-// FUNÇÕES DE MANIPULAÇÃO DO DOM
-  // Exibe ou oculta os campos de peso com base no tipo de média.
-  // Se for 'ponderada', gera os inputs de peso necessários.
- 
-function handleTipoMediaChange() {
-    const tipoMedia = tipoMediaSelect.value;
-    const numProvas = parseInt(numProvasInput.value, 10);
-
-    if (tipoMedia === 'ponderada') {
-        pesosArea.style.display = 'block';
-        generatePesosInputs(numProvas);
-    } else {
-        pesosArea.style.display = 'none';
-        // Remove os inputs de peso existentes ao mudar para simples
-        pesosInputsContainer.innerHTML = ''; 
+    function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        G_DISCIPLINA_ID = params.get('disciplina_id');
+        G_INSTITUICAO_ID = params.get('instituicao_id');
     }
-}
 
-
- // Gera dinamicamente os inputs de peso para cada componente (Px).
- 
-function generatePesosInputs(count) {
-    pesosInputsContainer.innerHTML = ''; // Limpa os inputs anteriores
-
-    const newInputs = [];
-    for (let i = 1; i <= count; i++) {
-        const sigla = `${SIGLA_BASE}${i}`;
-        const inputGroup = document.createElement('div');
-        inputGroup.className = 'input-group input-peso';
-
-        inputGroup.innerHTML = `
-            <label for="peso-${sigla}">Peso para ${sigla}</label>
-            <input 
-                type="number" 
-                id="peso-${sigla}" 
-                name="peso-${sigla}" 
-                min="1" 
-                value="10" 
-                required 
-                class="input-peso-componente"
-            >
-        `;
-        newInputs.push(inputGroup);
-    }
-    newInputs.forEach(input => pesosInputsContainer.appendChild(input));
-}
-
-
-
-// LÓGICA DE FORMULA E ARMAZENAMENTO
-
- // Calcula a fórmula e atualiza a interface.
-
-function updateFormulaDisplay() {
-    const numProvas = parseInt(numProvasInput.value, 10);
-    const tipoMedia = tipoMediaSelect.value;
-    
-    // 1. Gera as siglas dos componentes (P1, P2, P3...)
-    const siglas = Array.from({ length: numProvas }, (_, i) => `${SIGLA_BASE}${i + 1}`);
-
-    // 2. Coleta os pesos, se for média ponderada
-    let pesos = [];
-    if (tipoMedia === 'ponderada') {
-        // Coleta todos os inputs de peso criados dinamicamente
-        const pesoElements = document.querySelectorAll('.input-peso-componente');
-        pesos = Array.from(pesoElements).map(input => parseInt(input.value, 10) || 0);
-
-        // Se o número de pesos não bater com o número de provas, recria os inputs
-        if (pesos.length !== numProvas) {
-             generatePesosInputs(numProvas);
-             // Tenta coletar novamente com os novos inputs (se for a primeira vez)
-             pesos = Array.from(document.querySelectorAll('.input-peso-componente')).map(input => parseInt(input.value, 10) || 0);
+    function getToken() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Sessão expirada.');
+            window.location.href = 'login.html';
         }
+        return token;
     }
 
-    try {
-        // 3. Chama a função do seu GerarFormula.ts
-        const formula = generateFormula(siglas, tipoMedia, pesos);
-
-        // 4. Atualiza a interface
-        formulaDisplay.textContent = formula || 'Nenhuma fórmula configurada.';
-        componentesDisplay.textContent = siglas.join(', ') || 'Nenhum componente.';
-
-    } catch (error) {
-        // Trata erros da função generateFormula (ex: soma dos pesos <= 0)
-        formulaDisplay.textContent = `Erro: ${error.message}`;
-        console.error(error);
-    }
-}
-
-
- // Carrega a configuração salva ao iniciar a página.
- 
-function loadConfig() {
-    const savedConfig = JSON.parse(localStorage.getItem(STORAGE_KEY));
-
-    if (savedConfig) {
-        numProvasInput.value = savedConfig.numProvas;
-        tipoMediaSelect.value = savedConfig.tipoMedia;
-        
-        if (savedConfig.tipoMedia === 'ponderada') {
-            generatePesosInputs(savedConfig.numProvas);
-            
-            // Popula os valores dos pesos salvos
-            savedConfig.pesos.forEach((peso, index) => {
-                const sigla = `${SIGLA_BASE}${index + 1}`;
-                const input = document.getElementById(`peso-${sigla}`);
-                if (input) {
-                    input.value = peso;
-                }
-            });
-            pesosArea.style.display = 'block';
-        } else {
-            pesosArea.style.display = 'none';
-        }
-
-        // Atualiza a exibição da fórmula
-        updateFormulaDisplay();
-    } else {
-        // Se não houver config, inicializa com a configuração padrão do HTML (2 provas, simples)
-        handleTipoMediaChange();
-        updateFormulaDisplay();
-    }
-}
-
-
-// Atualiza a fórmula ao alterar o número de provas ou o tipo de média
-numProvasInput.addEventListener('input', () => {
-    // Garante que o número de provas é no mínimo 1
-    if (parseInt(numProvasInput.value, 10) < 1) {
-        numProvasInput.value = 1;
-    }
-    // Reajusta os inputs de peso e a fórmula
-    handleTipoMediaChange();
-    updateFormulaDisplay();
-});
-
-tipoMediaSelect.addEventListener('change', () => {
-    handleTipoMediaChange();
-    updateFormulaDisplay();
-});
-
-// Atualiza a fórmula ao alterar qualquer input de peso 
-pesosInputsContainer.addEventListener('input', (event) => {
-    if (event.target.classList.contains('input-peso-componente')) {
-        updateFormulaDisplay();
-    }
-});
-
-
-// Listener principal para o formulário de configuração
-form.addEventListener('submit', async (event) =>{
-    event.preventDefault();
-
-    const numProvas = parseInt(numProvasInput.value, 10);
-    const tipoMedia = tipoMediaSelect.value;
-    const sigla = Array.from({ length: numProvas }, (_, i) => `${SIGLA_BASE}${i + 1}`);
-
-    let pesos = [];
-    if (tipoMedia === 'ponderada') {
-        const pesoElements = document.querySelectorAll('.input-peso-componente');
-        pesos = Array.from(pesoElements).map(input => parseInt(input.value, 10) || 0);
-
-        const totalPesos = pesos.reduce((sum, current) => sum + current, 0);
-        if (totalPesos <= 0) {
-            alert('Erro: A soma dos pesos deve ser maior que zero para Média Ponderada.');
+    async function loadDadosDisciplina() {
+        const token = getToken();
+        if (!G_DISCIPLINA_ID || !token) {
+            alert('Erro: ID da disciplina ou token não encontrado.');
             return;
         }
+
+        linkVoltarDisciplinas.href = `./disciplinas.html?instituicao_id=${G_INSTITUICAO_ID}`;
+
+        try {
+            const response = await fetch(`/api/disciplinas/${G_DISCIPLINA_ID}/componentes`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Falha ao carregar dados');
+            }
+
+            const data = await response.json();
+            
+
+            G_COMPONENTES = data.componentes || [];
+            G_FORMULA_SALVA = data.formula || '';
+
+            renderComponentesLista();
+            renderFormulaUI();
+
+        } catch (err) {
+            console.error(err);
+            alert(`Erro ao carregar dados: ${err.message}`);
+        }
     }
 
-    let formulaFinal;
-    try {
-        formulaFinal = generateForumla(sigla, tipoMedia, pesos);
-    }catch (error) {
-        alert('Erro ao gerar fórmula: + error.message');
-        return;
-    }
 
-    // obter disciplinaId da URL 
-    const urlParams = new URLSearchParams(window.location.search);
-    const disciplinaId = urlParams.get('disciplina_id');
-    const token = localStorage.getItem('token');
+    function renderComponentesLista() {
+        listaComponentesUI.innerHTML = ''; 
+        if (G_COMPONENTES.length === 0) {
+            emptyComponentesMsg.style.display = 'block';
+            return;
+        }
+        
+        emptyComponentesMsg.style.display = 'none';
 
-    if (!disciplinaId || !token) {
-        alert('Erro: ID da disciplina ou token não encontrado para salvar.');
-        return;
-    }
-
-    // chamar a API para salvar a fórmula
-    try {
-        const response = await fetch(`/api/disciplina/${disciplinaId}/formula`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ formula: formulaFinal })
+        G_COMPONENTES.forEach(comp => {
+            const li = document.createElement('li');
+            li.className = 'componente-item turma-item'; 
+            li.innerHTML = `
+                <div class="componente-info">
+                    <strong>${comp.nome} (Sigla: ${comp.sigla})</strong>
+                    <span>${comp.descricao || 'Sem descrição'}</span>
+                </div>
+                <div class="componente-actions turma-actions">
+                    <button class="btn-tertiary btn-edit-componente"
+                        data-id="${comp.id}"
+                        data-nome="${comp.nome}"
+                        data-sigla="${comp.sigla}"
+                        data-desc="${comp.descricao || ''}">
+                        Editar
+                    </button>
+                    <button class="btn-tertiary-danger btn-delete-componente"
+                        data-id="${comp.id}"
+                        data-nome="${comp.nome}">
+                        Remover
+                    </button>
+                </div>
+            `;
+            listaComponentesUI.appendChild(li);
         });
+    }
 
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error || 'Falha ao salvar no backend');
+    function renderFormulaUI() {
+        formulaDisplay.textContent = G_FORMULA_SALVA || 'Nenhuma fórmula configurada.';
+        
+        if (tipoMediaSelect.value === 'ponderada') {
+            pesosArea.style.display = 'block';
+            pesosInputsContainer.innerHTML = '';
+
+            if (G_COMPONENTES.length === 0) {
+                 pesosInputsContainer.innerHTML = '<p class="form-hint">Adicione componentes primeiro.</p>';
+                 return;
+            }
+
+            G_COMPONENTES.forEach(comp => {
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.innerHTML = `
+                    <label for="peso-${comp.sigla}">Peso para ${comp.sigla}</label>
+                    <input 
+                        type="number" 
+                        id="peso-${comp.sigla}" 
+                        name="peso-${comp.sigla}" 
+                        class="input-peso-componente"
+                        data-sigla="${comp.sigla}"
+                        min="0" 
+                        value="1" 
+                        required>
+                `;
+                pesosInputsContainer.appendChild(div);
+            });
+        } else {
+            pesosArea.style.display = 'none';
+            pesosInputsContainer.innerHTML = '';
+        }
+        
+        validarFormula(G_FORMULA_SALVA);
+    }
+
+    function validarFormula(formula) {
+        if (!formula || G_COMPONENTES.length === 0) {
+            formulaFeedback.style.display = 'none';
+            return;
         }
 
-        // Salvar no localStorage (Apenas para recarregar a UI, opcional)
-        const configTosave = {
-            numProvas, tipoMedia, siglasComponentes: siglas, pesos, formula: formulaFinal
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(configTosave));
+        const siglasNaFormula = new Set(formula.match(/[A-Za-z0-9_]+/g) || []);
+        const siglasCadastradas = new Set(G_COMPONENTES.map(c => c.sigla));
+        
+        let feedback = '';
 
-        alert('Configuração de fórmula salva com sucesso no banco de dados!');
-        console.log('Configuração salva:', configTosave);
+        siglasCadastradas.forEach(sigla => {
+            if (!siglasNaFormula.has(sigla)) {
+                feedback += `⚠️ A sigla '${sigla}' está cadastrada mas não foi usada na fórmula.\n`;
+            }
+        });
 
-    } catch (err) {
-        alert(`Erro ao salvar configuração: ${err.message}`);
-        console.error(err);
+        siglasNaFormula.forEach(sigla => {
+            if (!siglasCadastradas.has(sigla) && isNaN(sigla)) { 
+                 feedback += `❌ A sigla '${sigla}' está na fórmula mas não foi cadastrada.\n`;
+            }
+        });
+
+        if (feedback) {
+            formulaFeedback.textContent = feedback;
+            formulaFeedback.style.display = 'block';
+        } else {
+            formulaFeedback.style.display = 'none';
+        }
     }
-})
 
-document.addEventListener('DOMContentLoaded', loadConfig);
+
+    function abrirModalComponente(modo, data = null) {
+        formComponente.reset();
+        if (modo === 'criar') {
+            G_EDITANDO_COMPONENTE_ID = null;
+            modalComponenteTitle.textContent = 'Adicionar Componente';
+            modalComponenteSubmit.textContent = 'Salvar';
+        } else if (modo === 'editar' && data) {
+            G_EDITANDO_COMPONENTE_ID = data.id;
+            modalComponenteTitle.textContent = 'Editar Componente';
+            modalComponenteSubmit.textContent = 'Atualizar';
+            
+            hiddenComponenteId.value = data.id;
+            nomeComponenteInput.value = data.nome;
+            siglaComponenteInput.value = data.sigla;
+            descComponenteInput.value = data.desc;
+        }
+        modalComponente.style.display = 'flex';
+        nomeComponenteInput.focus();
+    }
+
+    function fecharModalComponente() {
+        modalComponente.style.display = 'none';
+        formComponente.reset();
+        G_EDITANDO_COMPONENTE_ID = null;
+    }
+
+    async function salvarComponente(e) {
+        e.preventDefault();
+        const token = getToken();
+
+        const dados = {
+            nome: nomeComponenteInput.value.trim(),
+            sigla: siglaComponenteInput.value.trim().toUpperCase(),
+            desc: descComponenteInput.value.trim(),
+            disciplina_id: G_DISCIPLINA_ID
+        };
+
+        if (!dados.nome || !dados.sigla) {
+            alert('Nome e Sigla são obrigatórios.');
+            return;
+        }
+
+        const isEditMode = G_EDITANDO_COMPONENTE_ID !== null;
+        const url = isEditMode ? `/api/componentes/${G_EDITANDO_COMPONENTE_ID}` : '/api/componentes';
+        const method = isEditMode ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(dados)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Falha ao salvar');
+            }
+
+            alert(`Componente ${isEditMode ? 'atualizado' : 'criado'}!`);
+            fecharModalComponente();
+            loadDadosDisciplina();
+        } catch (err) {
+            alert(`Erro: ${err.message}`);
+        }
+    }
+
+
+    function abrirModalExclusao(id, nome) {
+        G_ITEM_PARA_EXCLUIR = { id, nome };
+        modalExclusaoMsg.innerHTML = `Tem certeza que deseja excluir o componente <strong>"${nome}"</strong>? Esta ação é irrevogável e pode falhar se houver notas lançadas para ele.`;
+        modalExclusao.style.display = 'flex';
+    }
+
+    function fecharModalExclusao() {
+        modalExclusao.style.display = 'none';
+        G_ITEM_PARA_EXCLUIR = null;
+    }
+
+    async function executarExclusao() {
+        if (!G_ITEM_PARA_EXCLUIR) return;
+        
+        const token = getToken();
+        const { id, nome } = G_ITEM_PARA_EXCLUIR;
+
+        btnConfirmarExclusao.disabled = true;
+        btnConfirmarExclusao.textContent = 'Excluindo...';
+
+        try {
+            const response = await fetch(`/api/componentes/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || `Falha ao excluir ${nome}`);
+            }
+
+            alert(`Componente "${nome}" excluído com sucesso.`);
+            loadDadosDisciplina();
+
+        } catch (err) {
+            alert(`Erro: ${err.message}`);
+        } finally {
+            btnConfirmarExclusao.disabled = false;
+            btnConfirmarExclusao.textContent = 'Sim, excluir';
+            fecharModalExclusao();
+        }
+    }
+
+
+    async function salvarFormula(e) {
+        e.preventDefault();
+        const token = getToken();
+        
+        if (G_COMPONENTES.length === 0) {
+            alert('Adicione componentes antes de definir uma fórmula.');
+            return;
+        }
+
+        const tipoMedia = tipoMediaSelect.value;
+        const siglas = G_COMPONENTES.map(c => c.sigla);
+        let pesos = [];
+        let formulaFinal = '';
+
+        try {
+            if (tipoMedia === 'ponderada') {
+                const pesoInputs = document.querySelectorAll('.input-peso-componente');
+                pesos = Array.from(pesoInputs).map(input => parseFloat(input.value));
+                
+                if (pesos.some(isNaN) || pesos.some(p => p < 0)) {
+                    throw new Error("Todos os pesos devem ser números positivos.");
+                }
+            }
+            
+            formulaFinal = generateFormula(siglas, tipoMedia, pesos);
+
+        } catch (error) {
+            alert(`Erro ao gerar fórmula: ${error.message}`);
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/disciplinas/${G_DISCIPLINA_ID}/formula`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ formula: formulaFinal })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Falha ao salvar no backend');
+            }
+
+            alert('Fórmula salva com sucesso!');
+            G_FORMULA_SALVA = formulaFinal; 
+        } catch (err) {
+            alert(`Erro ao salvar fórmula: ${err.message}`);
+        }
+    }
+
+
+    btnAddComponete.addEventListener('click', () => abrirModalComponente('criar'));
+
+    listaComponentesUI.addEventListener('click', (e) => {
+        const btnEdit = e.target.closest('.btn-edit-componente');
+        if (btnEdit) {
+            abrirModalComponente('editar', btnEdit.dataset);
+            return;
+        }
+
+        const btnDelete = e.target.closest('.btn-delete-componente');
+        if (btnDelete) {
+            abrirModalExclusao(btnDelete.dataset.id, btnDelete.dataset.nome);
+            return;
+        }
+    });
+
+    formComponente.addEventListener('submit', salvarComponente);
+    formFormula.addEventListener('submit', salvarFormula);
+
+    tipoMediaSelect.addEventListener('change', renderFormulaUI);
+
+    modalComponente.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
+        btn.addEventListener('click', fecharModalComponente);
+    });
+    modalExclusao.querySelectorAll('.modal-close-btn, .btn-cancel').forEach(btn => {
+        btn.addEventListener('click', fecharModalExclusao);
+    });
+
+    btnConfirmarExclusao.addEventListener('click', executarExclusao);
+
+    getUrlParams();
+    loadDadosDisciplina();
+});

@@ -1,3 +1,4 @@
+/* (o conteúdo existente de componentes.css pode ser mantido ou removido) */
 
 .page-header {
     display: flex;
@@ -11,7 +12,7 @@
 
 .layout-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Dividido em 2 colunas */
     gap: 1.5rem;
 }
 
@@ -25,24 +26,25 @@
 .card-header h3 {
     margin: 0;
 }
-.card-content {
-    padding: 1.5rem;
-}
 
+/* Estilo para a lista de componentes (reutilizando .turma-item) */
 #componentes-lista {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.componente-item {
+/* Herda de .turma-item de disciplinas.css */
+.componente-item { 
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 1rem;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
     border-radius: 6px;
-    margin-bottom: 0.75rem;
     background-color: #f9f9f9;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .componente-info {
@@ -69,6 +71,27 @@
     gap: 0.5rem;
     flex-shrink: 0; 
 }
+
+/* Estilos para a área de pesos */
+#pesos-inputs-container .input-group {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+#pesos-inputs-container .input-group label {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+}
+#pesos-inputs-container .input-group input {
+    width: 80px;
+    padding: 8px;
+    text-align: center;
+}
+
 
 @media (max-width: 900px) {
     .layout-grid {

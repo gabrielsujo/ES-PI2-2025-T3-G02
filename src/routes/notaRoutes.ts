@@ -169,12 +169,14 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
             notasMap.get(n.aluno_id)!.set(n.componente_id, n.valor);
         });
 
-        //validação - checar se todas as rotas existem
+        
+        // VALIDAÇÃO BLOQUEADORA (Todas as notas devem ser lançadas)
         let todasNotasLancadas = true;
         for (const aluno of alunos) {
             for (const comp of componentes) {
                 const nota = notasMap.get(aluno.id)?.get(comp.id);
-                if (nota === null || nota === undefined) {
+                // Verifica se a nota é estritamente null ou undefined
+                if (nota === null || nota === undefined) { 
                     todasNotasLancadas = false;
                     break;
                 }
@@ -182,8 +184,11 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
             if (!todasNotasLancadas) break;
         }
         if (!todasNotasLancadas) {
+            // Retorna erro 400  que o frontend deve tratar
             return res.status(400).json({ error: 'A exportação só é permitida quando TODAS as notas de todos os alunos estiverem lançadas.'})
         }
+        // =========================================================================
+
 
         //montar os dados para CSV
         const dataParaCsv: any[] = [];
@@ -201,9 +206,14 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
 
             componentes.forEach(comp => {
                 const valor = notasMap.get(aluno.id)?.get(comp.id) ?? null;
+                
+                // CORREÇÃO: Converte o valor para número ANTES de chamar toFixed()
+                const numericValor = valor !== null ? parseFloat(valor as any) : null;
+
                 // formata '10.00' para '10,00' (padrão excel br)
-                linha[comp.sigla] = valor !== null ? valor.toFixed(2).replace('.', ',') : 'N/A';
-                notasParaCalculo.push({ sigla: comp.sigla, valor: valor });
+                // Use numericValor, que agora é garantidamente um número ou null
+                linha[comp.sigla] = numericValor !== null ? numericValor.toFixed(2).replace('.', ',') : 'N/A';
+                notasParaCalculo.push({ sigla: comp.sigla, valor: numericValor });
             });
 
             const notaFinal = calcularNotaFinal(formula_calculo, notasParaCalculo);
@@ -215,6 +225,7 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
         //gerar o CSV e o nome do arquivo
         const csvString = Papa.unparse(dataParaCsv, { columns: headers, delimiter: ";"});
         
+        // Implementação da formatação do nome do arquivo 
         const now = new Date();
         const YYYY = now.getFullYear();
         const MM = String(now.getMonth() + 1).padStart(2, '0');
@@ -223,11 +234,16 @@ router.get('/turmas/:turma_id/export-csv', authenticateToken, async (req: AuthRe
         const mm = String(now.getMinutes()).padStart(2, '0');
         const ss = String(now.getSeconds()).padStart(2, '0');
         const ms = String(now.getMilliseconds()).padStart(3, '0');
-        const timestamp = `${YYYY}-${MM}-${DD}_${HH}${mm}${ss}${ms}`;
+        const timestamp = `${YYYY}-${MM}-${DD}_${HH}${mm}${ss}${ms}`; 
 
-        const turmaNomeClean = turma_nome.replace(/ /g, '');
-        const disciplinaSiglaClean = disciplina_sigla.replace(/ /g, '');
+        // Trata valores nulos para evitar TypeError ao manipular strings
+        const safeTurmaNome = turma_nome || 'Turma';
+        const safeDisciplinaSigla = disciplina_sigla || 'DISC';
 
+        const turmaNomeClean = safeTurmaNome.replace(/ /g, '');
+        const disciplinaSiglaClean = safeDisciplinaSigla.replace(/ /g, '');
+
+        // Formato final: YYYY-MM-DD_HHmmssms-TurmaX_Sigla.csv
         const fileName = `${timestamp}-${turmaNomeClean}_${disciplinaSiglaClean}.csv`;
 
         // enviar o arquivo como resposta

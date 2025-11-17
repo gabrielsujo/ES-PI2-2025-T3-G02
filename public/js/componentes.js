@@ -349,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('Fórmula salva com sucesso!');
             G_FORMULA_SALVA = formulaFinal; 
+            renderFormulaUI();
         } catch (err) {
             alert(`Erro ao salvar fórmula: ${err.message}`);
         }

@@ -78,7 +78,7 @@ JWT_SECRET=coloqueaquiumafrasealeatoria
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=seuemail@example.com
-EMAIL_PASS=sua_senha
+EMAIL_PASS=codigo gerado pela funcionalidade do gmail chamada "senha de apps"
 
 
 

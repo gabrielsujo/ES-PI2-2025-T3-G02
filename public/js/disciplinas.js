@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. funções auxiliares ---
@@ -94,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         article.className = 'card disciplina-card';
         
         const turmasHtml = disciplina.turmas.length > 0
-            ? disciplina.turmas.map(turma => criarItemTurma(turma, disciplina.id, institutionId)).join('')
+            ? disciplina.turmas.map((turma) => criarItemTurma(turma, disciplina.id, institutionId)).join('')
             : '<li style="padding: 0.5rem; color: var(--text-secondary);">Nenhuma turma cadastrada.</li>';
 
         article.innerHTML = `
@@ -107,29 +106,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 <ul class="turmas-lista">${turmasHtml}</ul>
                 <button class="btn-secondary-small btn-add-turma" data-disciplina-id="${disciplina.id}">+ Adicionar Turma</button>
             </div>
-            <div class="card-actions disciplina-actions card-actions-multi">
-                <button class="btn-danger-outline btn-excluir" data-id="${disciplina.id}" data-nome="${disciplina.nome}" data-tipo="disciplina">
-                    Remover
-                </button>
+            
+            <div class="card-actions disciplina-actions card-actions-multi d-flex justify-content-between align-items-center">
                 
-                <button class="btn-secondary btn-edit-disciplina" 
-                    data-id="${disciplina.id}" 
-                    data-nome="${disciplina.nome}" 
-                    data-sigla="${disciplina.sigla}" 
-                    data-codigo="${disciplina.codigo}" 
-                    data-periodo="${disciplina.periodo}">
-                    Editar
-                </button>
-
-                <a href="./componentes.html?disciplina_id=${disciplina.id}&instituicao_id=${institutionId}" class="btn-secondary">Configurar componentes</a>
+                <a href="./componentes.html?disciplina_id=${disciplina.id}&instituicao_id=${institutionId}" class="btn-primary-main">
+                    Configurar Componentes
+                </a>
+                
+                <div class="btn-small-group d-flex align-items-center">
+                    <button class="btn-secondary btn-edit-disciplina btn-sm"
+                            data-id="${disciplina.id}" 
+                            data-nome="${disciplina.nome}" 
+                            data-sigla="${disciplina.sigla}" 
+                            data-codigo="${disciplina.codigo}" 
+                            data-periodo="${disciplina.periodo}">
+                        Editar
+                    </button>
+                    <button class="btn-danger-outline btn-excluir btn-sm" 
+                            data-id="${disciplina.id}" 
+                            data-nome="${disciplina.nome}" 
+                            data-tipo="disciplina">
+                        Remover
+                    </button>
+                </div>
             </div>
         `;
-        // ajusta o layout dos botões (flex)
-        article.querySelector('.card-actions-multi').style.justifyContent = 'space-between';
-        article.querySelector('.btn-excluir').style.flex = '1';
-        article.querySelector('.btn-edit-disciplina').style.flex = '1';
-        article.querySelector('.btn-secondary').style.flex = '2'; // dá mais espaço
-
+        
         return article;
     }
 
@@ -159,9 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 5. lógica dos modais ---
 
-    /**
-     * reseta e fecha todos os modais, limpando o modo de edição
-     */
+    
+     // reseta e fecha todos os modais, limpando o modo de edição
+     
     function fecharTodosModais() {
         modalDisciplina.style.display = 'none';
         modalTurma.style.display = 'none';
@@ -287,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('btn-add-turma')) {
             fecharTodosModais(); // limpa tudo
             const disciplinaId = target.dataset.disciplinaId;
-            hiddenDisciplinaIdTurma.value = disciplinaId; // define o id da disciplina
+            hiddenDisciplinaIdTurma.value = disciplinaId || ''; 
             modalTurma.style.display = 'flex';
         }
 
@@ -299,15 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. define o estado de edição
             modoEdicao.ativo = true;
             modoEdicao.tipo = 'disciplina';
-            modoEdicao.id = data.id;
+            modoEdicao.id = data.id || null;
 
             // 2. preenche o formulário
             tituloModalDisciplina.textContent = 'Editar Disciplina';
             btnSubmitDisciplina.textContent = 'Atualizar';
-            document.getElementById('disciplina-nome').value = data.nome;
-            document.getElementById('disciplina-sigla').value = data.sigla;
-            document.getElementById('disciplina-codigo').value = data.codigo;
-            document.getElementById('disciplina-periodo').value = data.periodo;
+            document.getElementById('disciplina-nome').value = data.nome || '';
+            document.getElementById('disciplina-sigla').value = data.sigla || '';
+            document.getElementById('disciplina-codigo').value = data.codigo || '';
+            document.getElementById('disciplina-periodo').value = data.periodo || '';
             
             // 3. abre o modal
             modalDisciplina.style.display = 'flex';
@@ -321,16 +323,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. define o estado de edição
             modoEdicao.ativo = true;
             modoEdicao.tipo = 'turma';
-            modoEdicao.id = data.id;
+            modoEdicao.id = data.id || null;
 
             // 2. preenche o formulário
             tituloModalTurma.textContent = 'Editar Turma';
             btnSubmitTurma.textContent = 'Atualizar';
-            document.getElementById('turma-nome').value = data.nome;
-            document.getElementById('turma-dia').value = data.dia;
-            document.getElementById('turma-horario').value = data.horario;
-            document.getElementById('turma-local').value = data.local;
-            hiddenDisciplinaIdTurma.value = data.disciplinaId; // importante
+            document.getElementById('turma-nome').value = data.nome || '';
+            document.getElementById('turma-dia').value = data.dia || '';
+            document.getElementById('turma-horario').value = data.horario || '';
+            document.getElementById('turma-local').value = data.local || '';
+            hiddenDisciplinaIdTurma.value = data.disciplinaId || ''; 
             
             // 3. abre o modal
             modalTurma.style.display = 'flex';

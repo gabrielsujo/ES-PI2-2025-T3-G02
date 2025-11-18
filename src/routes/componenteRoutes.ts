@@ -77,6 +77,9 @@ router.post('/componentes', authenticateToken, async(req: AuthRequest, res) => {
 
     } catch(err){ 
         console.error(err);
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+            return res.status(409).json({ error: `A sigla "${sigla}" já existe para esta disciplina.` });
+        }
         res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 });
@@ -117,6 +120,9 @@ router.put('/componentes/:id', authenticateToken, async (req: AuthRequest, res) 
 
     } catch(err){
         console.error(err);
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+            return res.status(409).json({ error: `A sigla "${sigla}" já existe para esta disciplina.` });
+        }
         res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 });
@@ -148,6 +154,9 @@ router.delete('/componentes/:id', authenticateToken, async(req: AuthRequest, res
 
     } catch(err){
         console.error(err);
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
+             return res.status(400).json({ error: 'Não é possível remover. Verifique se existem notas associadas a este componente.' });
+        }
         res.status(500).json({ error: 'Erro interno do servidor. verifique se existe notas associadas.'});
     }
 });

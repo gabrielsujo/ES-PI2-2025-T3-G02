@@ -225,20 +225,33 @@ document.addEventListener('DOMContentLoaded', () => {
     async function salvarComponente(e) {
         e.preventDefault();
         const token = getToken();
+        
+        const isEditMode = G_EDITANDO_COMPONENTE_ID !== null;
+        const novaSigla = siglaComponenteInput.value.trim().toUpperCase();
 
-        const dados = {
-            nome: nomeComponenteInput.value.trim(),
-            sigla: siglaComponenteInput.value.trim().toUpperCase(),
-            desc: descComponenteInput.value.trim(),
-            disciplina_id: G_DISCIPLINA_ID
-        };
-
-        if (!dados.nome || !dados.sigla) {
+        if (!nomeComponenteInput.value.trim() || !novaSigla) {
             alert('Nome e Sigla são obrigatórios.');
             return;
         }
 
-        const isEditMode = G_EDITANDO_COMPONENTE_ID !== null;
+        const siglaDuplicada = G_COMPONENTES.find(comp => {
+            return comp.sigla.toUpperCase() === novaSigla && 
+                   (!isEditMode || comp.id.toString() !== G_EDITANDO_COMPONENTE_ID);
+        });
+
+        if (siglaDuplicada) {
+            alert(`Erro: A sigla "${novaSigla}" já está sendo usada pelo componente "${siglaDuplicada.nome}".`);
+            siglaComponenteInput.focus();
+            return;
+        }
+
+        const dados = {
+            nome: nomeComponenteInput.value.trim(),
+            sigla: novaSigla,
+            desc: descComponenteInput.value.trim(),
+            disciplina_id: G_DISCIPLINA_ID
+        };
+
         const url = isEditMode ? `/api/componentes/${G_EDITANDO_COMPONENTE_ID}` : '/api/componentes';
         const method = isEditMode ? 'PUT' : 'POST';
 

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import pool from '../config/db';
 import { authenticateToken, AuthRequest } from '../middlewares/authMiddleware';
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import csvParser from 'csv-parser';
 import { Readable } from 'stream';
 
@@ -86,7 +88,7 @@ router.post('/alunos', authenticateToken, async(req: AuthRequest, res) => {
         console.error(err);
         
         if (err && typeof err === 'object' && 'code' in err) {
-            if (err.code === '23505') { // Primary key violation
+            if (err.code === '23505') { 
                 return res.status(409).json({ error: 'Matrícula já cadastrada nesta turma.' });
             }
         }
@@ -140,7 +142,7 @@ router.put('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
     }
 });
 
-// Rota de Importação de Alunos via CSV 
+// Rota para importar alunos via CSV
 router.post(
     '/turmas/:turma_id/alunos/import-csv',
     authenticateToken,
@@ -154,7 +156,7 @@ router.post(
         return res.status(400).json({ error: 'Nenhum arquivo CSV válido enviado.'});
     }
     
-
+    // 1. Autorização da Turma e Captura de Matrículas Existentes
     try {
         const turmaIdNum = parseInt(turma_id, 10);
 
@@ -177,42 +179,36 @@ router.post(
             'SELECT matricula FROM alunos WHERE turma_id = $1',
             [turmaIdNum]
         );
-    
         const matriculaExistentes = new Set(existentesResult.rows.map(r => r.matricula));
 
         const alunosParaAdicionar: { matricula: string, nome: string } [] = [];
         let linhasInvalidas = 0;
-        let linhasDuplicadas = 0; 
+        let linhasDuplicadas = 0;
 
         const bufferStream = new Readable();
         bufferStream.push(req.file.buffer);
         bufferStream.push(null);
 
-     
+        // 2. Processa o CSV
         await new Promise<void>((resolve, reject) => {
             bufferStream
             .pipe(csvParser({
-
                 mapHeaders: ({ header }) => header.toLowerCase(),
-
                 separator: ',',
             }))
             .on('data', (row) => {
-                // Remove espaços em branco e garante que os campos existem
                 const matricula = row.matricula?.trim();
                 const nome = row.nome?.trim();
                 
-
                 const matriculaRegex = /^[0-9]+$/;
                 const nomeRegex = /^[^0-9]*$/; 
 
                 if (matricula && nome && matriculaRegex.test(matricula) && nomeRegex.test(nome)) {
-                    // Checa por duplicatas no banco ou no próprio arquivo CSV
                     if (!matriculaExistentes.has(matricula)) {
                         matriculaExistentes.add(matricula); 
                         alunosParaAdicionar.push({ matricula, nome });
                     } else {
-                        linhasDuplicadas++; 
+                        linhasDuplicadas++;
                     }
                 } else if (matricula || nome) {
                     linhasInvalidas++;
@@ -222,7 +218,7 @@ router.post(
             .on('error', reject);
         });
 
-
+        // 3. Inserção no Banco de Dados (Transacional)
         if (alunosParaAdicionar.length > 0) {
             const client = await pool.connect();
             try {
@@ -242,10 +238,9 @@ router.post(
             }
         }
         
-
+        // 4. Resposta de sucesso
         let message = `${alunosParaAdicionar.length} alunos importados com sucesso.`;
         
-        // Adiciona feedback sobre linhas ignoradas
         if (linhasDuplicadas > 0) {
             message += ` ${linhasDuplicadas} matrículas ignoradas (já existiam ou eram duplicadas no arquivo).`;
         }
@@ -260,7 +255,6 @@ router.post(
 
     } catch(err) {
         console.error('Erro na importação de CSV', err);
-
         if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
              return res.status(400).json({ error: 'Erro de vínculo: A Turma especificada não existe.' });
         }
@@ -268,7 +262,68 @@ router.post(
     }
 });
 
-// Rota para deletar alunos em lote
+
+// Rota para deletar um aluno individual 
+router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
+    const { id } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(403).json({ error: 'Autorização necessária.'});
+    }
+
+    let client: any;
+    try {
+        const alunoCheck = await pool.query(
+            `SELECT a.id FROM alunos a
+            JOIN turmas t ON a.turma_id = t.id
+            JOIN disciplinas d ON t.disciplina_id = d.id
+            JOIN instituicoes i ON d.instituicao_id = i.id
+            WHERE a.id = $1 AND i.usuario_id = $2`,
+            [id, usuarioId]
+        );
+
+        if(alunoCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Aluno não encontrado ou não autorizado.'});
+        }
+        
+        // 1. CORREÇÃO: Checa se existem notas com QUALQUER valor lançado 
+        const recordedNotesCheck = await pool.query(
+            'SELECT 1 FROM Notas WHERE aluno_id = $1 AND valor IS NOT NULL LIMIT 1',
+            [id]
+        );
+
+        if (recordedNotesCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Não é possível remover o aluno. Existem notas lançadas (incluindo notas zero).' });
+        }
+        // Fim da checagem
+
+        client = await pool.connect();
+        await client.query('BEGIN');
+
+        // 2. Deleta os registros de notas (que serão apenas NULL)
+        await client.query('DELETE FROM Notas WHERE aluno_id = $1', [id]);
+
+        // 3. Deleta o aluno
+        await client.query('DELETE FROM alunos WHERE id = $1', [id]);
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: 'Aluno removido com sucesso.' });
+    } catch(err) {
+        if (client) {
+            await client.query('ROLLBACK');
+        }
+        console.error(err);
+        
+        res.status(500).json({ error: 'Erro interno do servidor ao tentar deletar o aluno.' });
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+});
+
+// Rota para deletar alunos em lote 
 router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
     const { ids } = req.body; 
     const usuarioId = req.userId;
@@ -283,10 +338,23 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
         return res.status(400).json({ error: 'Nenhum ID de aluno válido fornecido.' });
     }
 
-    const client = await pool.connect();
+    let client: any;
     try{
+        
+        const recordedNotesCheck = await pool.query(
+            'SELECT 1 FROM Notas WHERE aluno_id = ANY($1::int[]) AND valor IS NOT NULL LIMIT 1',
+            [alunosIds]
+        );
+
+        if (recordedNotesCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Não é possível remover. Um ou mais alunos possuem notas lançadas (incluindo notas zero).' });
+        }
+        
+
+        client = await pool.connect();
         await client.query('BEGIN');
         
+        // Garante que todos os alunos pertencem ao usuário antes de deletar
         const checkQuery = await client.query(
             `SELECT a.id FROM alunos a
             JOIN turmas t ON a.turma_id = t.id
@@ -298,9 +366,13 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
 
         if (checkQuery.rows.length !== alunosIds.length) {
             await client.query('ROLLBACK');
-            return res.status(403).json({ error: 'Acão não autorizada. Alguns alunos não pertencem a este usúario ou não foram encontrados.' });
+            return res.status(403).json({ error: 'Ação não autorizada. Alguns alunos não pertencem a este usúario ou não foram encontrados.' });
         }
 
+        // 2. Deleta os registros de notas (que serão apenas NULL)
+        await client.query('DELETE FROM Notas WHERE aluno_id = ANY($1::int[])', [alunosIds]);
+
+        // 3. Deleta os alunos
         await client.query(
             'DELETE FROM alunos WHERE id = ANY($1::int[])',
             [alunosIds]
@@ -310,51 +382,17 @@ router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) 
         res.status(200).json({ message: `${alunosIds.length} alunos removidos com sucesso.` });
 
     }catch (err){
-        await client.query('ROLLBACK');
-        console.error(err);
-
-        if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
-            return res.status(400).json({ error: 'Não é possível remover. Verificar se os alunos possuem notas associadas.' });
+        if (client) {
+            await client.query('ROLLBACK');
         }
+        console.error(err);
         res.status(500).json({ error: 'Erro interno do servidor' });
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+        }
     }
 });
 
-// Rota para deletar aluno individual
-router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => {
-    const { id } = req.params;
-    const usuarioId = req.userId;
-
-    if (!usuarioId) {
-        return res.status(403).json({ error: 'Autorização necessária.'});
-    }
-
-    try {
-        const alunoCheck = await pool.query(
-            `SELECT a.id FROM alunos a
-            JOIN turmas t ON a.turma_id = t.id
-            JOIN disciplinas d ON t.disciplina_id = d.id
-            JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE a.id = $1 AND i.usuario_id = $2`,
-            [id, usuarioId]
-        );
-
-        if(alunoCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Aluno não encontrado ou não autorizado.'});
-        }
-
-        await pool.query('DELETE FROM alunos WHERE id = $1', [id]);
-
-        res.status(200).json({ message: 'Aluno removido com sucesso.' });
-    } catch(err) {
-        console.error(err);
-        if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
-            return res.status(400).json({ error: 'Não é possível remover. Verifique se existem notas associadas.' });
-        }
-        res.status(500).json({ error: 'Erro interno do servidor.' });
-    }
-});
 
 export default router;

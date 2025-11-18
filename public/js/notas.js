@@ -365,9 +365,9 @@ async function exportarCSV() {
         const contentDisposition = response.headers.get('content-disposition');
         let filename = 'notas.csv';
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+            let filenameMatch = contentDisposition.match(/filename=([^;]+)/i);
             if (filenameMatch && filenameMatch[1]) {
-                filename = filenameMatch[1];
+                filename = filenameMatch[1].trim().replace(/"/g, '');
             }
         }
 

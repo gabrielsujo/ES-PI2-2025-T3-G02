@@ -102,3 +102,65 @@
     background-color: #fafafa;
 }
 
+.card-actions-multi.d-flex {
+    margin-top: 15px;
+    align-items: center;
+    
+}
+
+
+.btn-primary-main {
+    display: inline-block;
+    padding: 12px 25px; 
+    font-size: 1.05rem; 
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+    min-width: 220px; 
+    
+    background-color: var(--color-primary, #007bff); 
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    
+   
+    margin-left: 25px !important; 
+}
+
+.btn-primary-main:hover {
+    background-color: var(--color-primary-dark, #0056b3);
+}
+
+
+.btn-small-group {
+    
+    margin-right: 25px !important;
+    gap: 0; 
+}
+
+
+.btn-small-group .btn-secondary,
+.btn-small-group .btn-danger-outline {
+   
+    width: 80px !important; 
+    min-width: 80px !important; 
+    
+    
+    box-sizing: border-box !important; 
+    
+    text-align: center;
+    display: inline-block; 
+
+ 
+    padding: 4px 10px !important; 
+    font-size: 0.8rem;
+    line-height: 1; 
+}
+
+
+.btn-small-group .btn-editar {
+    margin-right: 12px !important; 
+}
+
+
+

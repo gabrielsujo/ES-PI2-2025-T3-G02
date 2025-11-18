@@ -94,11 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderComponentesLista() {
         listaComponentesUI.innerHTML = ''; 
         if (G_COMPONENTES.length === 0) {
-            emptyComponentesMsg.style.display = 'block';
+            emptyComponentesMsg.classList.remove('is-hidden');
             return;
         }
         
-        emptyComponentesMsg.style.display = 'none';
+        emptyComponentesMsg.classList.add('is-hidden');
 
         G_COMPONENTES.forEach(comp => {
             const li = document.createElement('li');
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formulaDisplay.textContent = G_FORMULA_SALVA || 'Nenhuma fórmula configurada.';
         
         if (tipoMediaSelect.value === 'ponderada') {
-            pesosArea.style.display = 'block';
+            pesosArea.classList.remove('is-hidden');
             pesosInputsContainer.innerHTML = '';
 
             if (G_COMPONENTES.length === 0) {
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pesosInputsContainer.appendChild(div);
             });
         } else {
-            pesosArea.style.display = 'none';
+            pesosArea.classList.add('is-hidden');
             pesosInputsContainer.innerHTML = '';
         }
         
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function validarFormula(formula) {
         if (!formula || G_COMPONENTES.length === 0) {
-            formulaFeedback.style.display = 'none';
+            formulaFeedback.classList.add('is-hidden');
             return;
         }
 
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (feedback) {
             formulaFeedback.textContent = feedback;
-            formulaFeedback.style.display = 'block';
+            formulaFeedback.classList.remove('is-hidden');
         } else {
             formulaFeedback.style.display = 'none';
         }
@@ -212,12 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
             siglaComponenteInput.value = data.sigla;
             descComponenteInput.value = data.desc;
         }
-        modalComponente.style.display = 'flex';
+        modalComponente.classList.remove('is-hidden');
         nomeComponenteInput.focus();
     }
 
     function fecharModalComponente() {
-        modalComponente.style.display = 'none';
+        modalComponente.classList.add('is-hidden');
         formComponente.reset();
         G_EDITANDO_COMPONENTE_ID = null;
     }
@@ -279,11 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function abrirModalExclusao(id, nome) {
         G_ITEM_PARA_EXCLUIR = { id, nome };
         modalExclusaoMsg.innerHTML = `Tem certeza que deseja excluir o componente <strong>"${nome}"</strong>? Esta ação é irrevogável e pode falhar se houver notas lançadas para ele.`;
-        modalExclusao.style.display = 'flex';
+        modalExclusao.classList.remove('is-hidden');
     }
 
     function fecharModalExclusao() {
-        modalExclusao.style.display = 'none';
+        modalExclusao.classList.add('is-hidden');
         G_ITEM_PARA_EXCLUIR = null;
     }
 

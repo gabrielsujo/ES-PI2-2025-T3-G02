@@ -527,4 +527,32 @@ main.container {
     margin-right: 8px !important; 
 }
 
+/* ---- CLASSES DE UTILIDADE GLOBAIS ---- */
 
+/* Para esconder/mostrar elementos com JS */
+.is-hidden {
+    display: none;
+}
+.is-visible-flex {
+    display: flex;
+}
+.is-visible-block {
+    display: block;
+}
+
+/* Para textos de perigo */
+.text-danger {
+    color: #EF4444; 
+}
+
+/* Para modais com largura menor */
+.modal-sm {
+    max-width: 450px;
+}
+
+/* Para estados de "lista vazia" */
+.empty-state-text {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}

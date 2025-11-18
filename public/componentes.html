@@ -31,9 +31,9 @@
                     <h3>Componentes da Disciplina</h3>
                     <button id="add-componente-btn" class="btn-primary">+ Adicionar Componente</button>
                 </div>
-                <div class="card-content" style="padding: 0;">
-                    <ul id="componentes-lista" class="turmas-lista" style="margin: 0; padding: 1rem 1.5rem;">
-                        <p id="empty-componentes-msg" style="padding: 1rem 0; color: var(--text-secondary);">Nenhum componente cadastrado.</p>
+                <div class="card-content no-padding">
+                    <ul id="componentes-lista" class="turmas-lista">
+                        <p id="empty-componentes-msg" class="is-hidden">Nenhum componente cadastrado.</p>
                     </ul>
                 </div>
             </section>
@@ -52,7 +52,7 @@
                             </select>
                         </div>
 
-                        <div id="pesos-area" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); display: none;">
+                        <div id="pesos-area" class="is-hidden">
                             <h4>Definir Pesos</h4>
                             <p class="form-hint">Defina o peso de cada componente cadastrado.</p>
                             <div id="pesos-inputs-container">
@@ -65,19 +65,19 @@
                     </form>
                 </div>
                 
-                <div class="card-content" style="border-top: 1px solid var(--border-color); background-color: #f9f9f9;">
+                <div id="formula-display-container" class="card-content">
                     <h4>Fórmula de Cálculo Salva:</h4>
                     <p id="formula-display" style="font-family: monospace; font-size: 1.2em; color: var(--primary-blue); font-weight: bold; word-wrap: break-word;">
                         N/A
                     </p>
-                    <p id="formula-validation-feedback" style="margin-top: 1rem; color: #EF4444; font-weight: bold; display: none;">
+                    <p id="formula-validation-feedback" class="is-hidden">
                         </p>
                 </div>
             </section>
         </div>
     </main>
 
-    <div id="modal-componente" class="modal-overlay" style="display: none;">
+    <div id="modal-componente" class="modal-overlay is-hidden">
         <div class="modal-content card">
            <div class="modal-header">
                <h3 id="modal-componente-title">Adicionar Componente</h3>
@@ -109,8 +109,8 @@
        </div>
    </div>
 
-    <div id="modal-confirmar-exclusao" class="modal-overlay" style="display: none;">
-        <div class="modal-content card" style="max-width: 450px;">
+   <div id="modal-confirmar-exclusao" class="modal-overlay is-hidden">
+        <div class="modal-content card modal-sm">
             <div class="modal-header">
                 <h3 id="modal-exclusao-title">Confirmar Exclusão</h3>
                 <button class="modal-close-btn">&times;</button>

@@ -221,3 +221,13 @@ button[type="submit"]:hover, .submit-btn:hover {
         }
     }
 }
+
+/* ---- CLASSES DE UTILIDADE DE AUTENTICAÇÃO ---- */
+
+.container-sm {
+    max-width: 600px;
+}
+
+.auth-link-spacing {
+    margin-top: 1.5rem;
+}

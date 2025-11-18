@@ -230,8 +230,10 @@ function toggleEditMode(componente) {
     COMPONENTE_EDITANDO = componente;
 
     editingComponentLabel.querySelector('strong').textContent = componente;
-    activeEditButtons.style.display = 'flex';
-    dynamicEditButtonsContainer.style.display = 'none';
+    activeEditButtons.classList.add('is-visible-flex'); 
+    activeEditButtons.classList.remove('is-hidden');
+    dynamicEditButtonsContainer.classList.add('is-hidden');
+    dynamicEditButtonsContainer.classList.remove('is-visible-flex');
 
     const cellsToEdit = document.querySelectorAll(`.cell-nota[data-componente="${componente}"]`);
     cellsToEdit.forEach(cell => {
@@ -251,8 +253,10 @@ function cancelEditMode() {
     ESTADO_EDICAO_ATIVO = false;
     COMPONENTE_EDITANDO = null;
 
-    activeEditButtons.style.display = 'none';
-    dynamicEditButtonsContainer.style.display = 'flex';
+    activeEditButtons.classList.add('is-hidden'); 
+    activeEditButtons.classList.remove('is-visible-flex');
+    dynamicEditButtonsContainer.classList.add('is-visible-flex');
+    dynamicEditButtonsContainer.classList.remove('is-hidden');
 }
 
 

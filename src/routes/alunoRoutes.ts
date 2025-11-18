@@ -258,7 +258,109 @@ router.post(
         if (err && typeof err === 'object' && 'code' in err && err.code === '23503') {
              return res.status(400).json({ error: 'Erro de vínculo: A Turma especificada não existe.' });
         }
-        res.status(500).json({ error: 'Erro interno de servidor ao processar o CSV' });
+        res.status(500).json({ error: 'Erro interno do servidor ao processar o CSV' });
+    }
+});
+
+
+
+// Rota para deletar alunos em lote (DEVE VIR PRIMEIRO)
+router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
+    const { ids } = req.body; 
+    const usuarioId = req.userId;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'Array de IDs inválido ou vazio.' });
+    }
+
+    // Filtra IDs inválidos e garante que são números
+    const alunosIds = ids.map((id: any) => parseInt(id, 10)).filter((id: number) => !isNaN(id) && id > 0);
+
+    if (alunosIds.length === 0) {
+        return res.status(400).json({ error: 'Nenhum ID de aluno válido fornecido.' });
+    }
+
+    let client: any;
+    try{
+        // 1. Identifica alunos que NÃO podem ser excluídos (têm valor não NULL)
+        const notesExistResult = await pool.query(
+            `SELECT DISTINCT aluno_id FROM Notas 
+             WHERE aluno_id = ANY($1::int[]) AND valor IS NOT NULL`,
+            [alunosIds]
+        );
+        const blockedIds = new Set(notesExistResult.rows.map((r: any) => r.aluno_id));
+        
+        // 2. Separa IDs para exclusão (os que não estão na lista de bloqueados)
+        const idsToDelete = alunosIds.filter((id: number) => !blockedIds.has(id));
+        const deletedCount = idsToDelete.length;
+
+        if (deletedCount > 0) {
+            client = await pool.connect();
+            await client.query('BEGIN');
+
+            // 3. Verifica autorização APENAS para os que serão excluídos 
+            const checkQuery = await pool.query(
+                `SELECT a.id FROM alunos a
+                JOIN turmas t ON a.turma_id = t.id
+                JOIN disciplinas d ON t.disciplina_id = d.id
+                JOIN instituicoes i ON d.instituicao_id = i.id
+                WHERE i.usuario_id = $1 AND a.id = ANY($2::int[])`,
+                [usuarioId, idsToDelete]
+            );
+
+            if (checkQuery.rows.length !== deletedCount) {
+                await client.query('ROLLBACK');
+                return res.status(403).json({ error: 'Ação não autorizada. Tentativa de excluir aluno não pertencente ao usuário.' });
+            }
+
+            // 4. Deleta as notas (Que são NULL)
+            await client.query('DELETE FROM Notas WHERE aluno_id = ANY($1::int[])', [idsToDelete]);
+
+            // 5. Deleta os alunos
+            await pool.query(
+                'DELETE FROM alunos WHERE id = ANY($1::int[])',
+                [idsToDelete]
+            );
+            
+            await client.query('COMMIT');
+            client.release(); 
+            client = null;
+        }
+
+        // 6. Mensagem de feedback 
+        let message = '';
+        if (deletedCount > 0) {
+            message += `${deletedCount} aluno(s) removido(s) com sucesso.`;
+        }
+        
+        if (blockedIds.size > 0) {
+
+            const blockedNamesResult = await pool.query(
+                `SELECT nome FROM alunos WHERE id = ANY($1::int[])`,
+                [Array.from(blockedIds)]
+            );
+            const blockedNames = blockedNamesResult.rows.map((r: any) => r.nome).join(', ');
+            
+            const plural = blockedIds.size > 1 ? 's' : '';
+            message += ` ${blockedIds.size} aluno${plural} (${blockedNames}) não puderam ser removido${plural}, pois possuem notas lançadas.`;
+        }
+        
+        if (deletedCount === 0 && blockedIds.size === 0) {
+            message = 'Nenhum aluno foi removido. Verifique se os IDs eram válidos ou se pertenciam à sua conta.';
+        }
+
+        res.status(200).json({ message: message });
+
+    } catch (err) {
+        if (client) {
+            await client.query('ROLLBACK');
+        }
+        console.error('Erro na exclusão em lote:', err);
+        res.status(500).json({ error: 'Erro interno do servidor durante a exclusão em lote.' });
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
 });
 
@@ -287,7 +389,7 @@ router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => 
             return res.status(404).json({ error: 'Aluno não encontrado ou não autorizado.'});
         }
         
-        // 1. CORREÇÃO: Checa se existem notas com QUALQUER valor lançado 
+        // 1. Checa se existem notas com QUALQUER valor lançado (NULL é permitido, 0 não)
         const recordedNotesCheck = await pool.query(
             'SELECT 1 FROM Notas WHERE aluno_id = $1 AND valor IS NOT NULL LIMIT 1',
             [id]
@@ -316,77 +418,6 @@ router.delete('/alunos/:id', authenticateToken, async(req: AuthRequest, res) => 
         console.error(err);
         
         res.status(500).json({ error: 'Erro interno do servidor ao tentar deletar o aluno.' });
-    } finally {
-        if (client) {
-            client.release();
-        }
-    }
-});
-
-// Rota para deletar alunos em lote 
-router.delete('/alunos/batch', authenticateToken, async (req: AuthRequest, res) => {
-    const { ids } = req.body; 
-    const usuarioId = req.userId;
-
-    if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ error: 'Array de IDs inválido ou vazio.' });
-    }
-
-    const alunosIds = ids.map(id => parseInt(id,10)).filter(id => !isNaN(id));
-
-    if (alunosIds.length === 0) {
-        return res.status(400).json({ error: 'Nenhum ID de aluno válido fornecido.' });
-    }
-
-    let client: any;
-    try{
-        
-        const recordedNotesCheck = await pool.query(
-            'SELECT 1 FROM Notas WHERE aluno_id = ANY($1::int[]) AND valor IS NOT NULL LIMIT 1',
-            [alunosIds]
-        );
-
-        if (recordedNotesCheck.rows.length > 0) {
-            return res.status(400).json({ error: 'Não é possível remover. Um ou mais alunos possuem notas lançadas (incluindo notas zero).' });
-        }
-        
-
-        client = await pool.connect();
-        await client.query('BEGIN');
-        
-        // Garante que todos os alunos pertencem ao usuário antes de deletar
-        const checkQuery = await client.query(
-            `SELECT a.id FROM alunos a
-            JOIN turmas t ON a.turma_id = t.id
-            JOIN disciplinas d ON t.disciplina_id = d.id
-            JOIN instituicoes i ON d.instituicao_id = i.id
-            WHERE i.usuario_id = $1 AND a.id = ANY($2::int[])`,
-            [usuarioId, alunosIds]
-        );
-
-        if (checkQuery.rows.length !== alunosIds.length) {
-            await client.query('ROLLBACK');
-            return res.status(403).json({ error: 'Ação não autorizada. Alguns alunos não pertencem a este usúario ou não foram encontrados.' });
-        }
-
-        // 2. Deleta os registros de notas (que serão apenas NULL)
-        await client.query('DELETE FROM Notas WHERE aluno_id = ANY($1::int[])', [alunosIds]);
-
-        // 3. Deleta os alunos
-        await client.query(
-            'DELETE FROM alunos WHERE id = ANY($1::int[])',
-            [alunosIds]
-        );
-
-        await client.query('COMMIT');
-        res.status(200).json({ message: `${alunosIds.length} alunos removidos com sucesso.` });
-
-    }catch (err){
-        if (client) {
-            await client.query('ROLLBACK');
-        }
-        console.error(err);
-        res.status(500).json({ error: 'Erro interno do servidor' });
     } finally {
         if (client) {
             client.release();

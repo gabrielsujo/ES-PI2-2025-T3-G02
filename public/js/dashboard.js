@@ -46,9 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (instituicoes.length === 0) {
                 emptyMsg.style.display = 'block';
+                abrirModalParaCriar();
             } else {
                 instituicoes.forEach(inst => {
-                    // essa função agora lê a contagem de disciplinas
                     const card = criarCardInstituicao(inst);
                     listaInstituicoes.appendChild(card);
                 });
@@ -60,13 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // cria o html do card
-    // (aqui está a correção do bug)
     function criarCardInstituicao(inst) {
         const article = document.createElement('article');
         article.className = 'card';
         
-        // --- início da correção ---
-        // verifica a contagem de disciplinas (inst.totalDisciplinas)
         let subtitleHtml = '';
         if (!inst.totalDisciplinas || inst.totalDisciplinas === 0) {
             subtitleHtml = '<p class="card-subtitle-empty">Nenhuma disciplina cadastrada</p>';
@@ -75,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             subtitleHtml = `<p class="card-subtitle">${inst.totalDisciplinas} disciplinas cadastradas</p>`;
         }
-        // --- fim da correção ---
 
         article.innerHTML = `
             <div class="card-content">
